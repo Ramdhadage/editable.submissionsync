@@ -1,0 +1,17 @@
+{
+    "duckdb.databases": [
+        {
+            "alias": "mtcars",
+            "type": "file",
+            "path": "d:\\R shiny Apps\\editable\\inst\\extdata\\mtcars.duckdb",
+            "attached": false
+        },
+        {
+            "alias": "adsl",
+            "type": "file",
+            "path": "d:\\R shiny Apps\\editable\\inst\\extdata\\adsl.duckdb",
+            "attached": true
+        }
+    ],
+    "duckdb.defaultDatabase": "adsl"
+}

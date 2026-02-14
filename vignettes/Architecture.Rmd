@@ -1,0 +1,662 @@
+---
+title: "Architecture"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Architecture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+# Architecture & Design Patterns
+
+This document provides an in-depth overview of the `editable` package architecture, design patterns, and implementation details.
+
+## Table of Contents
+
+1. [High-Level Architecture](#high-level-architecture)
+2. [Design Patterns](#design-patterns)
+3. [Data Flow](#data-flow)
+4. [Component Details](#component-details)
+5. [Extension Points](#extension-points)
+6. [Performance Considerations](#performance-considerations)
+7. [Security Considerations](#security-considerations)
+
+---
+
+## High-Level Architecture
+
+### Layered Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                        │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │              Shiny UI (app_ui.R)                       │  │
+│  │  • Page Layout                                         │  │
+│  │  • Module UI Composition                               │  │
+│  │  • Theme Configuration                                 │  │
+│  └────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │           Shiny Server (app_server.R)                  │  │
+│  │  • Application State Management                        │  │
+│  │  • Module Orchestration                                │  │
+│  │  • Event Coordination                                  │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                            ↓                                 │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │          Table Module (mod_table.R)                    │  │
+│  │  • Widget Rendering                                    │  │
+│  │  • User Interaction Handling                           │  │
+│  │  • Reactive Data Binding                               │  │
+│  └────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                     Business Layer                           │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │            DataStore (R6 Class)                        │  │
+│  │  • Business Logic                                      │  │
+│  │  • Data Validation                                     │  │
+│  │  • State Management                                    │  │
+│  │  • Change Tracking                                     │  │
+│  └────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    Data Access Layer                         │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │         Database Utilities (utils.R)                   │  │
+│  │  • DBI/DuckDB Operations                               │  │
+│  │  • Connection Management                               │  │
+│  │  • Query Execution                                     │  │
+│  └────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                     Persistence Layer                        │
+│                      DuckDB Database                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Interaction
+
+```
+User Interface
+      ↓
+   Shiny UI
+      ↓
+ Module Server ←→ DataStore R6 ←→ DuckDB
+      ↓                ↓
+  HTMLWidget      Change Tracking
+      ↓                ↓
+  JavaScript       Validation
+```
+
+---
+
+## Design Patterns
+
+### 1. Repository Pattern
+
+The `DataStore` class implements the Repository pattern, abstracting data access:
+
+```r
+# DataStore acts as a repository
+DataStore <- R6::R6Class(
+  "DataStore",
+  public = list(
+    # CRUD operations abstracted
+    initialize = function(db_path, table_name),
+    read = function(),
+    update_cell = function(row, col, value),
+    save = function(),
+    delete = function()
+  ),
+  private = list(
+    # Database connection hidden from consumers
+    conn = NULL,
+    execute_query = function(sql)
+  )
+)
+```
+
+**Benefits:**
+- Separation of concerns
+- Testability (can mock database)
+- Flexibility to change storage backend
+
+### 2. Module Pattern (Shiny)
+
+Shiny modules encapsulate UI and server logic:
+
+```r
+# UI function
+mod_table_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    hotwidgetOutput(ns("table"))
+  )
+}
+
+# Server function
+mod_table_server <- function(id, store) {
+  moduleServer(id, function(input, output, session) {
+    # Encapsulated logic
+  })
+}
+```
+
+**Benefits:**
+- Reusability
+- Namespace isolation
+- Composability
+
+### 3. Observer Pattern
+
+Reactive programming implements Observer pattern:
+
+```r
+# DataStore notifies observers when data changes
+observe({
+  # React to store$data changes
+  updated_data <- store$data
+  
+  # Update widget
+  output$table <- renderHotwidget({
+    hotwidget(updated_data)
+  })
+})
+```
+
+### 4. Command Pattern
+
+Cell updates are encapsulated as commands:
+
+```r
+# Each update is a command object
+CellUpdate <- list(
+  row = 5,
+  col = "price",
+  old_value = 100,
+  new_value = 150,
+  timestamp = Sys.time()
+)
+
+# Store maintains command history
+store$update_history <- append(store$update_history, list(CellUpdate))
+
+# Undo is just reversing commands
+store$revert <- function() {
+  for (update in rev(store$update_history)) {
+    self$data[update$row, update$col] <- update$old_value
+  }
+}
+```
+
+### 5. Strategy Pattern
+
+Validation strategies are interchangeable:
+
+```r
+# Different validation strategies
+numeric_validator <- function(value) is.numeric(value)
+positive_validator <- function(value) value > 0
+range_validator <- function(min, max) {
+  function(value) value >= min && value <= max
+}
+
+# Applied via strategy pattern
+DataStore$set_validator <- function(column, strategy) {
+  private$validators[[column]] <- strategy
+}
+```
+
+---
+
+## Data Flow
+
+### Read Operation
+
+```
+1. User opens app
+   ↓
+2. app_server() creates DataStore
+   ↓
+3. DataStore$initialize()
+   - Connects to DuckDB
+   - Loads table
+   - Stores in $data and $original
+   ↓
+4. Data passed to mod_table_server()
+   ↓
+5. Module renders HTMLWidget
+   ↓
+6. JavaScript displays table
+   ↓
+7. User sees data
+```
+
+### Update Operation
+
+```
+1. User edits cell in browser
+   ↓
+2. JavaScript captures change
+   ↓
+3. Event sent to Shiny
+   Shiny.setInputValue('cellEdit', {
+     row: 5,
+     col: "price",
+     value: 150
+   })
+   ↓
+4. Module observes input$cellEdit
+   ↓
+5. Calls store$update_cell()
+   ↓
+6. DataStore:
+   - Validates new value
+   - Updates self$data
+   - Tracks change
+   ↓
+7. Reactive triggers re-render
+   ↓
+8. Widget updates display
+```
+
+### Save Operation
+
+```
+1. User clicks "Save"
+   ↓
+2. Module calls store$save()
+   ↓
+3. DataStore:
+   - Validates all data
+   - Opens DuckDB transaction
+   - Writes to database
+   - Commits transaction
+   ↓
+4. Success/error reported to UI
+```
+
+### Revert Operation
+
+```
+1. User clicks "Revert"
+   ↓
+2. Module calls store$revert()
+   ↓
+3. DataStore:
+   - Copies self$original → self$data
+   - Clears change history
+   ↓
+4. Reactive triggers re-render
+   ↓
+5. Widget shows original data
+```
+
+---
+
+## Component Details
+
+### DataStore Class
+
+**Responsibilities:**
+- Database connection lifecycle
+- Data loading and caching
+- Cell-level updates
+- Change tracking
+- Data validation
+- Summary calculation
+- Persistence
+
+**Key Methods:**
+
+```r
+initialize(db_path, table_name)
+  Purpose: Load data from database into memory
+  Side effects: Opens DB connection, caches data
+
+update_cell(row, col, value)
+  Purpose: Update single cell
+  Validation: Type checking, business rules
+  Tracking: Records change for revert
+
+save()
+  Purpose: Persist changes to database
+  Transaction: Uses DBI transactions
+  Returns: Success/error status
+
+revert()
+  Purpose: Discard all changes
+  Side effect: Restores original data
+
+summary()
+  Purpose: Calculate statistics
+  Returns: Named list of summaries
+```
+
+**State Management:**
+
+```r
+public = list(
+  data = NULL,        # Current data (modified)
+  original = NULL     # Original data (immutable)
+),
+private = list(
+  conn = NULL,        # Database connection
+  table_name = NULL,  # Target table
+  validators = list(), # Validation functions
+  change_log = list() # History of changes
+)
+```
+
+### Table Module
+
+**Responsibilities:**
+- Widget lifecycle management
+- Event handling
+- State synchronization
+- User feedback
+
+**Server Logic:**
+
+```r
+mod_table_server <- function(id, store) {
+  moduleServer(id, function(input, output, session) {
+    
+    # Render widget
+    output$table <- renderHotwidget({
+      hotwidget(
+        data = store$data,
+        options = list(...)
+      )
+    })
+    
+    # Handle cell edits
+    observeEvent(input$cellEdit, {
+      req(input$cellEdit)
+      
+      # Extract edit info
+      row <- input$cellEdit$row
+      col <- input$cellEdit$col
+      value <- input$cellEdit$value
+      
+      # Update store
+      result <- tryCatch(
+        store$update_cell(row, col, value),
+        error = function(e) {
+          showNotification(e$message, type = "error")
+          return(NULL)
+        }
+      )
+      
+      # Trigger re-render if successful
+      if (!is.null(result)) {
+        # Widget auto-updates via reactive
+      }
+    })
+    
+    # Return store reference
+    return(store)
+  })
+}
+```
+
+### HTMLWidget
+
+**JavaScript Implementation:**
+
+```javascript
+HTMLWidgets.widget({
+  name: 'hotwidget',
+  type: 'output',
+  
+  factory: function(el, width, height) {
+    let hot = null;
+    
+    return {
+      renderValue: function(x) {
+        // Initialize HandsOnTable
+        hot = new Handsontable(el, {
+          data: x.data,
+          colHeaders: x.colHeaders,
+          columns: x.columns,
+          
+          // Cell edit callback
+          afterChange: function(changes, source) {
+            if (source === 'edit') {
+              changes.forEach(([row, col, oldValue, newValue]) => {
+                // Send to Shiny
+                Shiny.setInputValue('cellEdit', {
+                  row: row,
+                  col: col,
+                  oldValue: oldValue,
+                  newValue: newValue
+                }, {priority: 'event'});
+              });
+            }
+          }
+        });
+      },
+      
+      resize: function(width, height) {
+        // Handle container resize
+      }
+    };
+  }
+});
+```
+
+---
+
+## Extension Points
+
+### 1. Custom Validators
+
+```r
+# Define custom validator
+validate_email <- function(value) {
+  grepl("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", value)
+}
+
+# Register with DataStore
+store$set_validator("email", validate_email)
+```
+
+### 2. Custom Formatters
+
+```r
+# Currency formatter
+format_currency <- function(value) {
+  sprintf("$%.2f", value)
+}
+
+# Register formatter
+store$set_formatter("price", format_currency)
+```
+
+### 3. Plugin System
+
+```r
+# Define plugin interface
+TablePlugin <- R6Class(
+  "TablePlugin",
+  public = list(
+    name = NULL,
+    initialize = function(name) self$name <- name,
+    on_cell_edit = function(row, col, value) {},
+    on_save = function(data) {},
+    on_load = function(data) {}
+  )
+)
+
+# Example: Audit log plugin
+AuditPlugin <- R6Class(
+  "AuditPlugin",
+  inherit = TablePlugin,
+  public = list(
+    on_cell_edit = function(row, col, value) {
+      # Log change to audit table
+      DBI::dbWriteTable(
+        conn, "audit_log",
+        data.frame(
+          timestamp = Sys.time(),
+          user = Sys.info()["user"],
+          row = row,
+          column = col,
+          new_value = value
+        ),
+        append = TRUE
+      )
+    }
+  )
+)
+
+# Register plugin
+store$add_plugin(AuditPlugin$new())
+```
+
+---
+
+## Performance Considerations
+
+### 1. Lazy Loading
+
+```r
+# Only load visible portion of large datasets
+DataStore$initialize <- function(db_path, table_name, lazy = TRUE) {
+  if (lazy) {
+    # Load only first 1000 rows
+    private$load_data(limit = 1000)
+  } else {
+    private$load_data()
+  }
+}
+```
+
+### 2. Batch Updates
+
+```r
+# Accumulate changes and apply in batch
+DataStore$update_cells <- function(changes) {
+  # changes = list of (row, col, value)
+  
+  # Apply all at once
+  for (change in changes) {
+    self$data[change$row, change$col] <- change$value
+  }
+  
+  # Single reactive invalidation
+  private$invalidate()
+}
+```
+
+### 3. Debouncing
+
+```r
+# Debounce save operations
+save_debounced <- debounce(
+  function() store$save(),
+  millis = 1000
+)
+
+observeEvent(input$save_button, {
+  save_debounced()
+})
+```
+
+### 4. Connection Pooling
+
+```r
+# Use pool for database connections
+library(pool)
+
+pool <- dbPool(
+  drv = duckdb::duckdb(),
+  dbdir = "data.duckdb"
+)
+
+# Get connection from pool
+conn <- poolCheckout(pool)
+# ... use connection ...
+poolReturn(conn)
+```
+
+---
+
+## Security Considerations
+
+### 1. SQL Injection Prevention
+
+```r
+# ALWAYS use parameterized queries
+query <- "UPDATE ? SET ? = ? WHERE rowid = ?"
+DBI::dbExecute(conn, query, params = list(
+  table_name, column, value, row_id
+))
+
+# NEVER build queries with paste()
+# BAD: paste("UPDATE", table, "SET", col, "=", value)
+```
+
+### 2. Input Validation
+
+```r
+# Validate all user inputs
+validate_column <- function(col, data) {
+  checkmate::assert_choice(col, names(data))
+}
+
+validate_row <- function(row, data) {
+  checkmate::assert_int(row, lower = 1, upper = nrow(data))
+}
+```
+
+### 3. Type Safety
+
+```r
+# Enforce type coercion
+coerce_value <- function(value, column_type) {
+  tryCatch(
+    switch(column_type,
+      "integer" = as.integer(value),
+      "numeric" = as.numeric(value),
+      "character" = as.character(value),
+      "Date" = as.Date(value),
+      value
+    ),
+    error = function(e) {
+      stop(sprintf("Cannot coerce '%s' to %s", value, column_type))
+    }
+  )
+}
+```
+
+### 4. Access Control
+
+```r
+# Implement row-level security
+DataStore$filter_by_user <- function(user_id) {
+  self$data <- self$data[self$data$owner_id == user_id, ]
+}
+```
+
+---
+
+## Best Practices
+
+1. **Always validate user input** before updating data
+2. **Use transactions** for multi-step database operations
+3. **Implement error handling** at every layer
+4. **Log important operations** for debugging
+5. **Test edge cases** thoroughly
+6. **Document public APIs** with roxygen2
+7. **Keep modules focused** on single responsibilities
+8. **Use reactive programming** judiciously (avoid reactive spaghetti)
+
+---

@@ -1,0 +1,111 @@
+{
+  "state-management": {
+    "required_patterns": {
+      "r6-based-store": "All application state must be managed through R6::R6Class",
+      "immutable-original": "Each state object must maintain self$original (immutable snapshot) and self$data (mutable working copy)",
+      "reactive-triggers": "Use reactiveVal() for explicit invalidation of dependent computations",
+      "single-source-of-truth": "DataStore is the canonical source of truth, passed to modules via reactiveVal"
+    },
+    "architectural_constraints": {
+      "r6-based-store": "Never use global variables or Shiny session$userData for core state. Encapsulate in R6 objects.",
+      "immutable-original": "self$original must never be modified by user interactions. Only by explicit save() or initialization.",
+      "reactive-triggers": "Manual trigger increments (store_trigger(store_trigger() + 1)) required for complex state updates",
+      "single-source-of-truth": "Do not duplicate state between modules and parent server. Always pass via reactiveVal.",
+      "cell-edit-pattern": "All cell updates must go through R6::update_cell() method with full validation chain"
+    }
+  },
+  "validation": {
+    "required_patterns": {
+      "multi-phase-validation": "Validation follows deterministic phases: data existence → row bounds → column existence → type coercion → NA detection",
+      "checkmate-assertions": "All deterministic checks use checkmate::assert_* for fail-fast validation",
+      "try-catch-risky-ops": "Database operations wrapped in tryCatch with distinct error branches",
+      "cli-messaging": "All error/info messages use cli::cli_abort() and cli::cli_inform() for rich, colored output",
+      "graceful-degradation": "Non-critical validation failures use cli::cli_warn() to log warnings without aborting"
+    },
+    "architectural_constraints": {
+      "validation-order": "Validate in order: data frame structure → row index → column name/index → type compatibility → NA safety",
+      "type-preservation": "Column types from self$original must be strictly preserved across all edits",
+      "error-context": "All validation errors must include: field names, expected values, actual values, constraints violated",
+      "no-silent-failures": "Never silently coerce data. Log warnings or abort with rich error messages.",
+      "na-detection": "Any type coercion that introduces NA must be caught and treated as validation failure"
+    }
+  },
+  "data-persistence": {
+    "required_patterns": {
+      "duckdb-integration": "Database operations use DBI::dbConnect() with duckdb::duckdb()",
+      "database-operations": "Load: DBI::dbReadTable(), Save: DBI::dbWriteTable(), Query: DBI::dbExecute()",
+      "snapshot-reset": "After successful save(), update self$original to match self$data (new baseline)",
+      "transaction-semantics": "Implement revert() by deep copying self$original; implement save() by overwriting table"
+    },
+    "architectural_constraints": {
+      "single-table-focus": "Current design focuses on single-table operations (mtcars). Complex joins not supported.",
+      "read-write-connection": "Open connections in read-write mode by default (read_only = FALSE)",
+      "connection-cleanup": "finalize() method must handle dbDisconnect() with proper error handling",
+      "bundled-database": "Database is bundled via system.file('extdata', 'mtcars.duckdb', package = 'editable')",
+      "table-level-operations": "All persistence operates at table level (DROP/CREATE/INSERT), not row level"
+    }
+  },
+  "ui-components": {
+    "required_patterns": {
+      "shiny-modules": "All UI components must be Shiny modules with UI (mod_*_ui) and server (mod_*_server) functions",
+      "namespace-isolation": "Use shiny::NS(id) for DOM element isolation",
+      "bslib-theming": "Use bslib::page_navbar(), bslib::nav_panel(), bslib::card() for Bootstrap 5 structure",
+      "reactive-ui-updates": "UI outputs (renderText, renderHotwidget) depend on store_trigger()",
+      "htmlwidget-integration": "Custom widgets wrapped with htmlwidgets::createWidget and render via renderHotwidget"
+    },
+    "architectural_constraints": {
+      "no-direct-dom": "Never manipulate DOM directly. Use Shiny reactive outputs and shinyjs::runjs() for JS execution.",
+      "module-data-flow": "Modules receive reactiveVal(store) and manually trigger updates with store_trigger()",
+      "button-feedback": "Action buttons (save, revert) managed via shinyjs::disable/enable based on modification state",
+      "notification-pattern": "Use awn::notify() for user feedback (success, alert, error types)",
+      "modal-dialogs": "Confirmation flows implemented with shiny::modalDialog()"
+    }
+  },
+  "htmlwidget-communication": {
+    "required_patterns": {
+      "widget-factory": "Use htmlwidgets::createWidget() with package name 'editable'",
+      "shiny-bindings": "Export hotwidgetOutput() and renderHotwidget() for Shiny integration",
+      "js-r-messaging": "Shiny.setInputValue() sends edits from JS to R as input$<id>_edit",
+      "raf-debouncing": "Use requestAnimationFrame() to batch rapid edits and prevent edit storms",
+      "handsontable-hooks": "Implement afterChange and afterValidate hooks for edit capture and validation"
+    },
+    "architectural_constraints": {
+      "0-based-indexing": "JavaScript uses 0-based row indexing; R converts to 1-based (row + 1)",
+      "single-cell-edits": "Capture individual cell changes, not batch operations from widget",
+      "type-validation-js": "Handsontable provides visual validation; R provides data validation",
+      "column-metadata": "Pass colHeaders, colTypes, colWidths to JS for proper formatting",
+      "pagination": "Use Handsontable pagination (50 rows default) for large datasets"
+    }
+  },
+  "testing": {
+    "required_patterns": {
+      "unit-tests": "All public methods tested with testthat::test_that()",
+      "exact-assertions": "Use expect_equal() for exact matches, not approximations",
+      "edge-case-coverage": "Test NULL inputs, out-of-bounds indices, type mismatches, empty data",
+      "error-messages": "Test error message patterns with expect_error(class = 'rlang_error')",
+      "shinytest2-framework": "Shiny UI tests use ShinyTest2 via testServer()"
+    },
+    "architectural_constraints": {
+      "deterministic-tests": "All tests must be deterministic (no random data, consistent seeds)",
+      "cleanup-pattern": "Use rm() and gc() to clean up DataStore objects after each test",
+      "no-mocking": "Tests integrate with actual DuckDB database, not mocked",
+      "test-data": "Use bundled mtcars.duckdb for all tests (32 rows, 12 columns)",
+      "isolation": "Each test creates fresh DataStore instance; no shared state between tests"
+    }
+  },
+  "error-handling": {
+    "required_patterns": {
+      "cli-library": "All user-facing errors use cli::cli_abort() with structured messages",
+      "error-context": "Errors include: what failed, why, relevant values, how to fix",
+      "try-catch-structure": "High-level functions wrap risky operations in tryCatch with distinct error branches",
+      "validation-first": "Validate inputs deterministically before attempting risky operations",
+      "user-friendly-messages": "Remove ANSI codes with clean_error_message() before displaying in UI"
+    },
+    "architectural_constraints": {
+      "no-silent-failures": "Never fail silently. Log or abort with rich context.",
+      "atomic-transactions": "Either succeed completely or fail completely (no partial updates)",
+      "error-recovery": "UI can recover from errors via revert() or retry (save)",
+      "connection-error-handling": "Distinguish between validation errors (client-side) and DB errors (server-side)"
+    }
+  }
+}

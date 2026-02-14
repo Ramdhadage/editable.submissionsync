@@ -1,0 +1,37 @@
+Package: editable
+Title: Interactive Excel-Style Data Editor
+Version: 0.1.0
+Authors@R: 
+    person("Ramnath", "Dhadage", , "ram.dhadage123@gmail.com", role = c("aut", "cre"))
+Description: A lightweight table viewer package.
+License: MIT + file LICENSE
+Imports: 
+    awn,
+    bslib,
+    checkmate,
+    cli,
+    config,
+    DBI,
+    duckdb,
+    golem,
+    htmlwidgets,
+    methods,
+    R6,
+    rlang,
+    shiny,
+    shinyjs
+Suggests:
+    pkgload, 
+    here,
+    knitr,
+    rmarkdown,
+    shinytest2,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+VignetteBuilder: knitr
+URL: https://github.com/Ramdhadage/editable
+BugReports: https://github.com/Ramdhadage/editable/issues
+Roxygen: list(markdown = TRUE)

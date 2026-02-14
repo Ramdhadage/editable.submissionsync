@@ -1,0 +1,101 @@
+{
+  "package-configuration": [
+    "DESCRIPTION",
+    "NAMESPACE",
+    "editable.Rproj"
+  ],
+  "documentation-configuration": [
+    "README.md",
+    "inst/golem-config.yml"
+  ],
+  "application-entry-points": [
+    "app.R",
+    "R/run_app.R"
+  ],
+  "shiny-ui": [
+    "R/app_ui.R"
+  ],
+  "shiny-server": [
+    "R/app_server.R"
+  ],
+  "shiny-modules": [
+    "R/mod_table.R"
+  ],
+  "r6-classes": [
+    "R/DataStore.R"
+  ],
+  "utility-functions": [
+    "R/utils.R"
+  ],
+  "shiny-configuration": [
+    "R/shiny_config.R",
+    "R/skeleton_loader.R"
+  ],
+  "custom-htmlwidgets": [
+    "R/hotwidget.R",
+    "inst/htmlwidgets/hotwidget.js",
+    "inst/htmlwidgets/hotwidget.yaml"
+  ],
+  "stylesheets": [
+    "inst/app/www/custom.css",
+    "inst/htmlwidgets/libs/handsontable/ht-theme-main.css",
+    "inst/htmlwidgets/libs/handsontable/handsontable.min.css"
+  ],
+  "third-party-libraries": [
+    "inst/htmlwidgets/libs/handsontable/handsontable.full.min.js",
+    "inst/htmlwidgets/libs/numbro-2.3.2/js/numbro.min.js"
+  ],
+  "data-files": [
+    "inst/extdata/mtcars.duckdb"
+  ],
+  "unit-tests": [
+    "tests/testthat/test-DataStore.R",
+    "tests/testthat/test-golem-recommended.R",
+    "tests/testthat/test-mod_table.R",
+    "tests/testthat/test-utils.R"
+  ],
+  "test-configuration": [
+    "tests/testthat.R",
+    "tests/testthat/helper-shinytest2.R",
+    "tests/testthat/helpers.R"
+  ],
+  "test-data": [
+    "tests/testthat/fixtures/mtcars.R"
+  ],
+  "test-snapshots": [
+    "tests/testthat/_snaps/windows-4.5/shinytest2"
+  ],
+  "development-documentation": [
+    "man/calculate_column_means.Rd",
+    "man/clean_error_message.Rd",
+    "man/coerce_value.Rd",
+    "man/DataStore.Rd",
+    "man/delete_mtcars_table.Rd",
+    "man/detect_numeric_columns.Rd",
+    "man/establish_duckdb_connection.Rd",
+    "man/hotwidget-shiny.Rd",
+    "man/hotwidget.Rd",
+    "man/load_mtcars_data.Rd",
+    "man/mod_table_server.Rd",
+    "man/mod_table_ui.Rd",
+    "man/run_app.Rd",
+    "man/set_mtcars_column_type.Rd",
+    "man/validate_column.Rd",
+    "man/validate_data.Rd",
+    "man/validate_db_path.Rd",
+    "man/validate_no_na_loss.Rd",
+    "man/validate_row.Rd",
+    "man/validate_save_connection.Rd",
+    "man/validate_save_data.Rd",
+    "man/validate_save_structure.Rd",
+    "man/validate_summary_data.Rd",
+    "man/write_mtcars_to_db.Rd"
+  ],
+  "dependency-management": [
+    "renv/activate.R",
+    "renv/settings.json"
+  ],
+  "environment-configuration": [
+    "inst/app/www"
+  ]
+}

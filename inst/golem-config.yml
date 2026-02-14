@@ -1,0 +1,11 @@
+default:
+  golem_name: editable
+  golem_version: 0.0.0.9000
+  app_prod: no
+test:
+  app_prod: no
+  test_mode: yes
+production:
+  app_prod: yes
+dev:
+  golem_wd: !expr golem::pkg_path()
