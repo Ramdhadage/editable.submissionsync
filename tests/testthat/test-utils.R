@@ -6,7 +6,7 @@ test_that("validate_db_path returns valid path when file exists", {
 
 test_that("validate_db_path accepts custom parameters", {
   result <- validate_db_path(
-    package = "editable",
+    package = "editable.submissionsync",
     subdir = "extdata",
     filename = "mtcars.duckdb"
   )

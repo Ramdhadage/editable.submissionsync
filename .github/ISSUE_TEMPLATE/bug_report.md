@@ -50,7 +50,7 @@ sessionInfo()
 Please provide a minimal reproducible example (reprex):
 
 ```r
-library(editable)
+library(editable.submissionsync)
 
 # Your code that reproduces the issue
 store <- DataStore$new("test.duckdb", "test_table")

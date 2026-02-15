@@ -1,15 +1,15 @@
-# editable <img src="inst/app/www/favicon.ico" align="right" height="138" />
+# editable.submissionsync <img src="inst/app/www/favicon.ico" align="right" height="138" />
 
 > Interactive Excel-Style Data Editor
 
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-<!-- [![R-CMD-check](https://github.com/Ramdhadage/editable/workflows/R-CMD-check/badge.svg)](https://github.com/Ramdhadage/editable/actions) -->
+<!-- [![R-CMD-check](https://github.com/Ramdhadage/editable.submissionsync/workflows/R-CMD-check/badge.svg)](https://github.com/Ramdhadage/editable.submissionsync/actions) -->
 
 ---
 
 ## Overview
 
-**editable** is a feature-rich table editing solution for R Shiny that combines the flexibility of Microsoft Excel with real-time updates, change tracking, and database synchronization. Built on a robust architecture using R6 classes, DuckDB, and custom htmlwidgets, it provides enterprise-grade data editing capabilities within your Shiny applications.
+**editable.submissionsync** is a feature-rich table editing solution for R Shiny that combines the flexibility of Microsoft Excel with real-time updates, change tracking, and database synchronization. Built on a robust architecture using R6 classes, DuckDB, and custom htmlwidgets, it provides enterprise-grade data editing capabilities within your Shiny applications.
 
 ### Key Features
 
@@ -30,7 +30,7 @@
 
 ```r
 # Install development version
-remotes::install_github("Ramdhadage/editable")
+remotes::install_github("Ramdhadage/editable.submissionsync")
 ```
 ---
 
@@ -39,7 +39,7 @@ remotes::install_github("Ramdhadage/editable")
 ### Basic Usage
 
 ```r
-library(editable)
+library(editable.submissionsync)
 
 # Launch the application
 run_app()
@@ -49,7 +49,7 @@ run_app()
 
 ```r
 library(shiny)
-library(editable)
+library(editable.submissionsync)
 
 ui <- fluidPage(
   titlePanel("Data Editor"),

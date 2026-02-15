@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(editable)
+library(editable.submissionsync)
 
-test_check("editable")
+test_check("editable.submissionsync")

@@ -8,7 +8,7 @@ vignette: >
 ---
 # Architecture & Design Patterns
 
-This document provides an in-depth overview of the `editable` package architecture, design patterns, and implementation details.
+This document provides an in-depth overview of the `editable.submissionsync` package architecture, design patterns, and implementation details.
 
 ## Table of Contents
 

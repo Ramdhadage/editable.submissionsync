@@ -5,7 +5,7 @@
 \title{Validate DuckDB Path}
 \usage{
 validate_db_path(
-  package = "editable",
+  package = "editable.submissionsync",
   subdir = "extdata",
   filename = "mtcars.duckdb"
 )
