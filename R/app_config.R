@@ -9,7 +9,7 @@
 #'
 #' @noRd
 app_sys <- function(...) {
-  system.file(..., package = "editable")
+  system.file(..., package = "editable.submissionsync")
 }
 
 
@@ -41,4 +41,88 @@ get_golem_config <- function(
     file = file,
     use_parent = use_parent
   )
+}
+#' Get Database Configuration
+#'
+#' @description
+#' Retrieves database configuration from golem-config.yml.
+#' This is the {golem} way: centralized, environment-aware configuration.
+#'
+#' @param config Environment name (default, production, test, etc.)
+#'
+#' @return List with database configuration
+#'
+#' @examples
+#' \dontrun{
+#' db_config <- get_database_config()
+#' db_config <- get_database_config("production")
+#' }
+#' @export
+get_database_config <- function(config = Sys.getenv("GOLEM_CONFIG_ACTIVE", "default")) {
+  get_golem_config("database", config = config)
+}
+
+#' Get Schema Configuration
+#'
+#' @description
+#' Retrieves schema configuration from golem-config.yml.
+#'
+#' @param config Environment name
+#'
+#' @return List with schema configuration
+#'
+#' @examples
+#' \dontrun{
+#' schema_config <- get_schema_config()
+#' }
+#' @export
+get_schema_config <- function(config = Sys.getenv("GOLEM_CONFIG_ACTIVE", "default")) {
+  get_golem_config("schema", config = config)
+}
+
+#' Validate Configuration
+#'
+#' @description
+#' Validates that golem-config.yml has required database and schema sections.
+#' Called during app initialization to fail-fast on misconfiguration.
+#'
+#' @param config Environment name
+#'
+#' @return Invisible TRUE or throws error
+#'
+#' @keywords internal
+validate_golem_config <- function(config = Sys.getenv("GOLEM_CONFIG_ACTIVE", "default")) {
+  tryCatch({
+    # Validate database section
+    db_config <- get_database_config(config)
+    checkmate::assert_list(db_config, names = "named")
+    checkmate::assert_names(
+      names(db_config),
+      must.include = c("name", "path")
+    )
+    
+    # Validate schema section
+    schema_config <- get_schema_config(config)
+    checkmate::assert_list(schema_config, names = "named")
+    checkmate::assert_names(
+      names(schema_config),
+      must.include = c("identifier", "columns")
+    )
+    
+    # Validate identifier section
+    checkmate::assert_string(schema_config$identifier$column)
+    
+    # Validate columns section
+    checkmate::assert_list(schema_config$columns, min.len = 1)
+    
+    cli::cli_alert_success("Configuration validated: {config}")
+    invisible(TRUE)
+  }, error = function(e) {
+    cli::cli_abort(c(
+      "Invalid golem-config.yml configuration",
+      "i" = "Environment: {config}",
+      "x" = "{conditionMessage(e)}",
+      "!" = "Check inst/golem-config.yml structure"
+    ))
+  })
 }

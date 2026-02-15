@@ -18,7 +18,7 @@
 #' db_path <- validate_db_path()
 #' }
 #' @keywords internal
-validate_db_path <- function(package = "editable",
+validate_db_path <- function(package = "editable.submissionsync",
                              subdir = "extdata",
                              filename = "mtcars.duckdb") {
   tryCatch({
@@ -670,4 +670,26 @@ get_cached_store <- function() {
     .cache_env$.store$revert()
   }
   .cache_env$.store
+}
+#' Compute Factor Levels from Data
+#'
+#' @description
+#' Extracts unique values from a column to use as factor levels.
+#' Sorted for consistency.
+#'
+#' @param column_data Vector of column data
+#'
+#' @return Vector of unique levels (sorted)
+#'
+#' @keywords internal
+compute_factor_levels <- function(column_data) {
+  # Get unique values, exclude NA
+  levels <- unique(column_data[!is.na(column_data)])
+  
+  # Sort for consistency
+  if (is.numeric(levels)) {
+    sort(levels)
+  } else {
+    sort(as.character(levels))
+  }
 }

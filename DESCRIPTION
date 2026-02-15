@@ -1,4 +1,4 @@
-Package: editable
+Package: editable.submissionsync
 Title: Interactive Excel-Style Data Editor
 Version: 0.1.0
 Authors@R: 
@@ -32,6 +32,6 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
-URL: https://github.com/Ramdhadage/editable
-BugReports: https://github.com/Ramdhadage/editable/issues
+URL: https://github.com/Ramdhadage/editable.submissionsync
+BugReports: https://github.com/Ramdhadage/editable.submissionsync/issues
 Roxygen: list(markdown = TRUE)

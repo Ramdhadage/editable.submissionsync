@@ -78,7 +78,7 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
     x,
     width = width,
     height = height,
-    package = 'editable',
+    package = 'editable.submissionsync',
     elementId = elementId
   )
 }
@@ -101,7 +101,7 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
 #'
 #' @export
 hotwidgetOutput <- function(outputId, width = '100%', height = '400px'){
-  htmlwidgets::shinyWidgetOutput(outputId, 'hotwidget', width, height, package = 'editable')
+  htmlwidgets::shinyWidgetOutput(outputId, 'hotwidget', width, height, package = 'editable.submissionsync')
 }
 
 #' @rdname hotwidget-shiny
