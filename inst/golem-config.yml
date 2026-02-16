@@ -178,48 +178,48 @@ default:
       # Efficacy Measures
       MMSETOT:
         type: "numeric"
-  database:
-    name: "mtcars"
-    path: "extdata"
-    table: null
-    id_column: "MODEL"
-  schema:
-      MODEL:
-        type: "character"
-        editable: false
-
-      mpg:
-        type: "numeric"
-
-      cyl:
-        type: "factor"
-
-      disp:
-        type: "numeric"
-
-      hp:
-        type: "numeric"
-
-      drat:
-        type: "numeric"
-
-      wt:
-        type: "numeric"
-
-      qsec:
-        type: "numeric"
-
-      vs:
-        type: "factor"
-
-      am:
-        type: "logical"
-
-      gear:
-        type: "factor"
-
-      carb:
-        type: "factor"
+  # database:
+  #   name: "mtcars"
+  #   path: "extdata"
+  #   table: null
+  #   id_column: "MODEL"
+  # schema:
+  #     MODEL:
+  #       type: "character"
+  #       editable: false
+  #
+  #     mpg:
+  #       type: "numeric"
+  #
+  #     cyl:
+  #       type: "factor"
+  #
+  #     disp:
+  #       type: "numeric"
+  #
+  #     hp:
+  #       type: "numeric"
+  #
+  #     drat:
+  #       type: "numeric"
+  #
+  #     wt:
+  #       type: "numeric"
+  #
+  #     qsec:
+  #       type: "numeric"
+  #
+  #     vs:
+  #       type: "factor"
+  #
+  #     am:
+  #       type: "logical"
+  #
+  #     gear:
+  #       type: "factor"
+  #
+  #     carb:
+  #       type: "factor"
 
 # PRODUCTION CONFIGURATION (for deployment)
 # ==============================================================================
@@ -227,50 +227,6 @@ production:
   golem_name: editable
   golem_version: 0.1.0
   app_prod: yes
-
-
-  database:
-    name: "mtcars"
-    path: "extdata"
-    table: null
-    id_column: "MODEL"
-  schema:
-      MODEL:
-        type: "character"
-        editable: false
-
-      mpg:
-        type: "numeric"
-
-      cyl:
-        type: "factor"
-
-      disp:
-        type: "numeric"
-
-      hp:
-        type: "numeric"
-
-      drat:
-        type: "numeric"
-
-      wt:
-        type: "numeric"
-
-      qsec:
-        type: "numeric"
-
-      vs:
-        type: "factor"
-
-      am:
-        type: "logical"
-
-      gear:
-        type: "factor"
-
-      carb:
-        type: "factor"
 
   database:
     name: "adsl"
@@ -436,3 +392,47 @@ production:
       # Efficacy Measures
       MMSETOT:
         type: "numeric"
+
+  # database:
+  #   name: "mtcars"
+  #   path: "extdata"
+  #   table: null
+  #   id_column: "MODEL"
+  # schema:
+  #     MODEL:
+  #       type: "character"
+  #       editable: false
+  #
+  #     mpg:
+  #       type: "numeric"
+  #
+  #     cyl:
+  #       type: "factor"
+  #
+  #     disp:
+  #       type: "numeric"
+  #
+  #     hp:
+  #       type: "numeric"
+  #
+  #     drat:
+  #       type: "numeric"
+  #
+  #     wt:
+  #       type: "numeric"
+  #
+  #     qsec:
+  #       type: "numeric"
+  #
+  #     vs:
+  #       type: "factor"
+  #
+  #     am:
+  #       type: "logical"
+  #
+  #     gear:
+  #       type: "factor"
+  #
+  #     carb:
+  #       type: "factor"
+
