@@ -54,23 +54,13 @@ DataStore <- R6::R6Class(
     #'
     initialize = function() {
       tryCatch({
-        private$db_path <- validate_db_path()
 
+        db_config <- get_golem_config("database")
+        schema_config <- get_golem_config("schema")
+        private$db_path <- validate_db_path(subdir = db_config$path,
+                                            filename = db_config$name)
         self$con <- establish_duckdb_connection(private$db_path, read_only = FALSE)
-
-        new_rownames <- c("Mazda RX4", "Mazda RX4 Wag", "Datsun 710",
-                          "Hornet 4 Drive", "Hornet Sportabout", "Valiant",
-                          "Duster 360", "Merc 240D", "Merc 230",
-                          "Merc 280", "Merc 280C", "Merc 450SE",
-                          "Merc 450SL", "Merc 450SLC", "Cadillac Fleetwood",
-                          "Lincoln Continental", "Chrysler Imperial", "Fiat 128",
-                          "Honda Civic", "Toyota Corolla", "Toyota Corona",
-                          "Dodge Challenger", "AMC Javelin", "Camaro Z28",
-                          "Pontiac Firebird", "Fiat X1-9", "Porsche 914-2",
-                          "Lotus Europa", "Ford Pantera L", "Ferrari Dino",
-                          "Maserati Bora", "Volvo 142E"
-        )
-        query_result <- load_mtcars_data(self$con, table = "mtcars", default_rownames = new_rownames)
+        query_result <- load_data(self$con, table = "adsl")
         self$original <- data.frame(query_result, check.names = TRUE)
         self$data <- data.frame(query_result, check.names = TRUE)
         private$modified_cells <- 0
