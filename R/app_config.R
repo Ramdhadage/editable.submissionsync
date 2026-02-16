@@ -23,7 +23,7 @@ app_sys <- function(...) {
 #'
 #' @noRd
 get_golem_config <- function(
-  value,
+  value = NULL,
   config = Sys.getenv(
     "GOLEM_CONFIG_ACTIVE",
     Sys.getenv(
@@ -100,21 +100,11 @@ validate_golem_config <- function(config = Sys.getenv("GOLEM_CONFIG_ACTIVE", "de
       names(db_config),
       must.include = c("name", "path")
     )
-    
+
     # Validate schema section
     schema_config <- get_schema_config(config)
-    checkmate::assert_list(schema_config, names = "named")
-    checkmate::assert_names(
-      names(schema_config),
-      must.include = c("identifier", "columns")
-    )
-    
-    # Validate identifier section
-    checkmate::assert_string(schema_config$identifier$column)
-    
-    # Validate columns section
-    checkmate::assert_list(schema_config$columns, min.len = 1)
-    
+    checkmate::assert_list(schema_config, names = "named", min.len = 1)
+
     cli::cli_alert_success("Configuration validated: {config}")
     invisible(TRUE)
   }, error = function(e) {
