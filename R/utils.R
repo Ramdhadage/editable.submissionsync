@@ -20,10 +20,10 @@
 #' @keywords internal
 validate_db_path <- function(package = "editable.submissionsync",
                              subdir = "extdata",
-                             filename = "mtcars.duckdb") {
+                             filename = "mtcars") {
   tryCatch({
     # Resolve path from package installation
-    db_path <- system.file(subdir, filename, package = package)
+    db_path <- system.file(subdir, paste0(filename,".duckdb") , package = package)
 
     # Validation: Check if path is non-empty and file exists
     checkmate::assert_file_exists(db_path, access = "r")
@@ -63,6 +63,7 @@ establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
   tryCatch({
     db_dir <- dirname(temp_db)
     checkmate::assert_directory_exists(db_dir, access = "w")
+    checkmate::assert_file_exists(temp_db, access = "r")
     con <- DBI::dbConnect(
       duckdb::duckdb(),
       dbdir = temp_db,
@@ -99,17 +100,11 @@ establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
 #' data <- load_mtcars_data(con, table = "mtcars")
 #' }
 #' @keywords internal
-load_mtcars_data <- function(con, table = "mtcars", default_rownames = NULL) {
+load_data <- function(con, table = "adsl", default_rownames = NULL) {
   tryCatch({
     # Read table with type preservation
     result <-  DBI::dbReadTable(con, table)
-    # Add rownames as first column if they're missing
-    if (is.null(rownames(result)) || all(rownames(result) == seq_len(nrow(result))) && !("MODEL" %in% names(result))) {
-      if (!is.null(default_rownames) && length(default_rownames) == nrow(result)) {
-        result <- cbind(MODEL = default_rownames, result, stringsAsFactors = FALSE)
-      }
-    }
-    result <- set_mtcars_column_type(result)
+    # result <- set_column_type(result)
     return(result)
   }, error = function(e) {
     cli::cli_warn(c(
@@ -135,7 +130,7 @@ load_mtcars_data <- function(con, table = "mtcars", default_rownames = NULL) {
 #' transformed_mtcars <- set_mtcars_column_type(mtcars)
 #' }
 #' @keywords internal
-set_mtcars_column_type <- function(data) {
+set_column_type <- function(data) {
   if (!is.data.frame(data)) {
     stop("Input must be a data frame")
   }
@@ -670,26 +665,4 @@ get_cached_store <- function() {
     .cache_env$.store$revert()
   }
   .cache_env$.store
-}
-#' Compute Factor Levels from Data
-#'
-#' @description
-#' Extracts unique values from a column to use as factor levels.
-#' Sorted for consistency.
-#'
-#' @param column_data Vector of column data
-#'
-#' @return Vector of unique levels (sorted)
-#'
-#' @keywords internal
-compute_factor_levels <- function(column_data) {
-  # Get unique values, exclude NA
-  levels <- unique(column_data[!is.na(column_data)])
-  
-  # Sort for consistency
-  if (is.numeric(levels)) {
-    sort(levels)
-  } else {
-    sort(as.character(levels))
-  }
 }
