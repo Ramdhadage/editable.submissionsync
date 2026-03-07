@@ -65,13 +65,13 @@ mod_table_ui <- function(id) {
 
           div(
             class = "summary-metric",
-            div(class = "summary-metric-label", "Average MPG"),
+            div(class = "summary-metric-label", "Average AGE"),
             div(class = "summary-metric-value highlight", textOutput(ns("summary_mpg"), inline = TRUE))
           ),
 
           div(
             class = "summary-metric",
-            div(class = "summary-metric-label", "Average HP"),
+            div(class = "summary-metric-label", "Average BMIBL"),
             div(class = "summary-metric-value highlight", textOutput(ns("summary_hp"), inline = TRUE))
           ),
 
@@ -311,8 +311,8 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       store_trigger()
       store <- store_reactive()
       summary <- store$summary()
-      if (!is.null(summary$numeric_means) && "mpg" %in% names(summary$numeric_means)) {
-        sprintf("%.1f", summary$numeric_means["mpg"])
+      if (!is.null(summary$numeric_means) && "AGE" %in% names(summary$numeric_means)) {
+        sprintf("%.1f", summary$numeric_means["AGE"])
       } else {
         "N/A"
       }
@@ -322,8 +322,8 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       store_trigger()
       store <- store_reactive()
       summary <- store$summary()
-      if (!is.null(summary$numeric_means) && "hp" %in% names(summary$numeric_means)) {
-        sprintf("%.1f", summary$numeric_means["hp"])
+      if (!is.null(summary$numeric_means) && "BMIBL" %in% names(summary$numeric_means)) {
+        sprintf("%.1f", summary$numeric_means["BMIBL"])
       } else {
         "N/A"
       }
