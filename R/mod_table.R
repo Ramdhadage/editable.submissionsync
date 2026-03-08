@@ -69,13 +69,13 @@ mod_table_ui <- function(id) {
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Average AGE"),
-            div(class = "summary-metric-value highlight", textOutput(ns("summary_mpg"), inline = TRUE))
+            div(class = "summary-metric-value highlight", textOutput(ns("summary_age"), inline = TRUE))
           ),
 
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Average BMIBL"),
-            div(class = "summary-metric-value highlight", textOutput(ns("summary_hp"), inline = TRUE))
+            div(class = "summary-metric-value highlight", textOutput(ns("summary_bmibl"), inline = TRUE))
           ),
 
           div(
@@ -310,7 +310,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       as.character(summary$cols)
     })
 
-    output$summary_mpg <- renderText({
+    output$summary_age <- renderText({
       store_trigger()
       store <- store_reactive()
       summary <- store$summary()
@@ -321,7 +321,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       }
     })
 
-    output$summary_hp <- renderText({
+    output$summary_bmibl <- renderText({
       store_trigger()
       store <- store_reactive()
       summary <- store$summary()

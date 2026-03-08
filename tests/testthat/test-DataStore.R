@@ -6,33 +6,36 @@ test_that("DataStore initializes correctly from DuckDB", {
   expect_s4_class(store$con, "duckdb_connection")
   expect_true(is.data.frame(store$data))
   expect_true(is.data.frame(store$original))
-  expect_equal(nrow(store$data), 32)
-  expect_equal(ncol(store$data), 12)
+  expect_equal(nrow(store$data), 254)
+  expect_equal(ncol(store$data), 48)
+  # Cleanup
+  rm(store)
+  gc()
 })
 
 test_that("DataStore maintains immutable original snapshot", {
   store <- DataStore$new()
   original_copy <- store$original
 
-  store$update_cell(1, "mpg", 999)
+  store$update_cell(1, "AGE", 50)
 
   expect_equal(store$original, original_copy)
-  expect_equal(store$original[1, "mpg"], original_copy[1, "mpg"])
-  expect_equal(store$data[1, "mpg"], 999)
+  expect_equal(store$original[1, "AGE"], original_copy[1, "AGE"])
+  expect_equal(store$data[1, "AGE"], 50)
 })
 
 test_that("update_cell handles numeric columns correctly", {
   # Arrange
   store <- DataStore$new()
-  original_value <- store$data[1, "mpg"]
+  original_value <- store$data[1, "AGE"]
 
   # Act
-  result <- store$update_cell(row = 1, col = "mpg", value = 25.5)
+  result <- store$update_cell(row = 1, col = "AGE", value = 50)
 
   # Assert
   expect_true(result)
-  expect_equal(store$data[1, "mpg"], 25.5)
-  expect_type(store$data[1, "mpg"], "double")
+  expect_equal(store$data[1, "AGE"], 50)
+  expect_type(store$data[1, "AGE"], "double")
 })
 
 test_that("update_cell validates row bounds", {
@@ -41,13 +44,13 @@ test_that("update_cell validates row bounds", {
 
   # Act & Assert - Row too large
   expect_error(
-    store$update_cell(row = 999, col = "mpg", value = 20),
+    store$update_cell(row = 999, col = "AGE", value = 20),
     "Row index out of bounds"
   )
 
   # Act & Assert - Row too small
   expect_error(
-    store$update_cell(row = 0, col = "mpg", value = 20),
+    store$update_cell(row = 0, col = "AGE", value = 20),
     "Row index out of bounds"
   )
 })
@@ -79,13 +82,13 @@ test_that("update_cell enforces type safety", {
   store <- DataStore$new()
 
   # Act & Assert - String to numeric should work (coercion)
-  expect_true(store$update_cell(row = 1, col = "mpg", value = "22.5"))
-  expect_equal(store$data[1, "mpg"], 22.5)
+  expect_true(store$update_cell(row = 1, col = "AGE", value = "22.5"))
+  expect_equal(store$data[1, "AGE"], 22.5)
 
   # Act & Assert - Invalid string to numeric should fail
   expect_error(
-    store$update_cell(row = 1, col = "mpg", value = "not_a_number"),
-    "Invalid numeric value 'not_a_number' for column 'mpg'"
+    store$update_cell(row = 1, col = "AGE", value = "not_a_number"),
+    "Invalid numeric value 'not_a_number' for column 'AGE'"
   )
 })
 
@@ -95,12 +98,12 @@ test_that("revert restores original data and resets counter of modified cells", 
   original_snapshot <- store$original
 
   # Act - Make multiple changes
-  store$update_cell(1, "mpg", 999)
-  store$update_cell(2, "disp", 12)
-  store$update_cell(3, "hp", 500)
+  store$update_cell(1, "AGE", 999)
+  store$update_cell(2, "DURDIS", 12)
+  store$update_cell(3, "TRTDUR", 500)
 
   # Assert - Data changed and counter incremented
-  expect_equal(store$data[1, "mpg"], 999)
+  expect_equal(store$data[1, "AGE"], 999)
   expect_equal(store$get_modified_count(), 3)
 
   # Act - Revert
@@ -108,7 +111,7 @@ test_that("revert restores original data and resets counter of modified cells", 
 
   # Assert - Data restored to original
   expect_equal(store$data, original_snapshot)
-  expect_equal(store$data[1, "mpg"], original_snapshot[1, "mpg"])
+  expect_equal(store$data[1, "AGE"], original_snapshot[1, "AGE"])
 
   # Assert - Counter reset
   expect_equal(store$get_modified_count(), 0)
@@ -125,17 +128,17 @@ test_that("revert creates deep copy (not reference)", {
   store$revert()
 
   # Act - Modify reverted data
-  store$data[1, "mpg"] <- 555
+  store$data[1, "AGE"] <- 55
 
   # Assert - Original unchanged (deep copy, not reference)
-  expect_equal(store$original[1, "mpg"], original_snapshot[1, "mpg"])
-  expect_failure(expect_equal(store$original[1, "mpg"], 555))
+  expect_equal(store$original[1, "AGE"], original_snapshot[1, "AGE"])
+  expect_failure(expect_equal(store$original[1, "AGE"], 55))
 })
 
 test_that("revert succeeds with valid original data frame", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 123)
+  store$update_cell(1, "AGE", 23)
 
   # Act & Assert - Revert with valid data should succeed
   expect_no_error(store$revert())
@@ -169,7 +172,7 @@ test_that("revert throws cli_abort when original is not a data.frame", {
 test_that("revert produces cli_inform success message", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 555)
+  store$update_cell(1, "AGE", 55)
 
   # Act & Assert - Check for informational message
   expect_message(
@@ -196,8 +199,8 @@ test_that("revert maintains immutability after modification", {
   original_snapshot <- store$original
 
   # Act - Modify, then revert
-  store$update_cell(1, "mpg", 100)
-  store$update_cell(2, "cyl", 8)
+  store$update_cell(1, "AGE", 100)
+  store$update_cell(2, "TRTDUR", 8)
   store$revert()
 
   # Act - Verify original is still unchanged
@@ -210,17 +213,17 @@ test_that("revert works multiple times in succession", {
   original_snapshot <- store$original
 
   # Act & Assert - First cycle
-  store$update_cell(1, "mpg", 111)
+  store$update_cell(1, "AGE", 11)
   store$revert()
   expect_equal(store$data, original_snapshot)
 
   # Act & Assert - Second cycle
-  store$update_cell(2, "cyl", 6)
+  store$update_cell(2, "TRTDUR", 6)
   store$revert()
   expect_equal(store$data, original_snapshot)
 
   # Act & Assert - Third cycle
-  store$update_cell(3, "hp", 999)
+  store$update_cell(3, "DURDIS", 99)
   store$revert()
   expect_equal(store$data, original_snapshot)
 })
@@ -231,14 +234,14 @@ test_that("revert respects all data types (numeric, character, factor, etc.)", {
   original_snapshot <- store$original
 
   # Act - Modify numeric column
-  store$update_cell(1, "mpg", 55.5)
-  store$update_cell(1, "cyl", 6)
+  store$update_cell(1, "AGE", 55.5)
+  store$update_cell(1, "TRTDUR", 6)
 
   # Act - Revert
   store$revert()
 
   # Assert - All types preserved
-  expect_equal(typeof(store$data$mpg), typeof(original_snapshot$mpg))
+  expect_equal(typeof(store$data$AGE), typeof(original_snapshot$AGE))
   expect_equal(typeof(store$data$cyl), typeof(original_snapshot$cyl))
   expect_equal(store$data, original_snapshot)
 })
@@ -249,18 +252,18 @@ test_that("revert integrates with update_cell workflow", {
   original_snapshot <- store$original
 
   # Act - Complex workflow: update multiple cells, revert, update different cells
-  store$update_cell(1, "mpg", 100)
-  store$update_cell(2, "cyl", 8)
+  store$update_cell(1, "AGE", 100)
+  store$update_cell(2, "TRTDUR", 8)
   expect_equal(store$get_modified_count(), 2)
 
   store$revert()
   expect_equal(store$data, original_snapshot)
   expect_equal(store$get_modified_count(), 0)
 
-  store$update_cell(3, "hp", 200)
+  store$update_cell(3, "DURDIS", 200)
   expect_equal(store$get_modified_count(), 1)
-  expect_failure(expect_equal(store$data[3, "hp"], original_snapshot[3, "hp"]))
-  expect_equal(store$data[1, "mpg"], original_snapshot[1, "mpg"])  # Row 1 unmodified
+  expect_failure(expect_equal(store$data[3, "DURDIS"], original_snapshot[3, "DURDIS"]))
+  expect_equal(store$data[1, "AGE"], original_snapshot[1, "AGE"])  # Row 1 unmodified
 })
 
 test_that("summary returns correct structure when data loaded", {
@@ -276,9 +279,9 @@ test_that("summary returns correct structure when data loaded", {
   expect_true("rows" %in% names(summary))
   expect_true("cols" %in% names(summary))
   expect_true("numeric_means" %in% names(summary))
-  expect_equal(summary$rows, 32)
-  expect_equal(summary$cols, 12)
-  expect_true(grepl("Rows: 32", summary$message))
+  expect_equal(summary$rows, 254)
+  expect_equal(summary$cols, 48)
+  expect_true(grepl("Rows: 254 | Columns: 48", summary$message))
 })
 
 test_that("summary handles numeric means correctly", {
@@ -290,8 +293,8 @@ test_that("summary handles numeric means correctly", {
 
   # Assert
   expect_type(summary$numeric_means, "double")
-  expect_true("mpg" %in% names(summary$numeric_means))
-  expect_true("hp" %in% names(summary$numeric_means))
+  expect_true("AGE" %in% names(summary$numeric_means))
+  expect_true("BMIBL" %in% names(summary$numeric_means))
   expect_true(all(!is.na(summary$numeric_means)))
 })
 
@@ -302,7 +305,7 @@ test_that("update_cell handles NULL data gracefully", {
 
   # Act & Assert
   expect_error(
-    store$update_cell(1, "mpg", 20),
+    store$update_cell(1, "AGE", 20),
     "No data loaded"
   )
 })
@@ -329,7 +332,7 @@ test_that("summary handles NULL data gracefully", {
 test_that("save operation succeeds with valid data and connection", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 99.9)
+  store$update_cell(1, "AGE", 99.9)
 
   # Act & Assert - Save returns invisible self
   result <- store$save()
@@ -343,16 +346,16 @@ test_that("save operation succeeds with valid data and connection", {
 test_that("save persists data to DuckDB table", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 88.8)
-  store$update_cell(2, "disp", 7)
+  store$update_cell(1, "AGE", 88.8)
+  store$update_cell(2, "BMIBL", 7)
 
   # Act
   store$save()
 
   # Assert - Query database to verify persistence
-  db_data <- DBI::dbReadTable(store$con, "mtcars")
-  expect_equal(db_data[1, "mpg"], 88.8)
-  expect_equal(db_data[2, "disp"], 7)
+  db_data <- DBI::dbReadTable(store$con, "adsl")
+  expect_equal(db_data[1, "AGE"], 88.8)
+  expect_equal(db_data[2, "BMIBL"], 7)
 
   # Cleanup
   rm(store)
@@ -363,15 +366,15 @@ test_that("save updates original snapshot to match current data", {
   # Arrange
   store <- DataStore$new()
   original_before_save <- store$original
-  store$update_cell(1, "mpg", 77.7)
-  expect_failure(expect_equal(store$data[1, "mpg"], original_before_save[1, "mpg"]))
+  store$update_cell(1, "AGE", 77.7)
+  expect_failure(expect_equal(store$data[1, "AGE"], original_before_save[1, "AGE"]))
 
   # Act
   store$save()
 
   # Assert - Original should now match modified data
-  expect_equal(store$original[1, "mpg"], 77.7)
-  expect_equal(store$data[1, "mpg"], store$original[1, "mpg"])
+  expect_equal(store$original[1, "AGE"], 77.7)
+  expect_equal(store$data[1, "AGE"], store$original[1, "AGE"])
 
   # Cleanup
   rm(store)
@@ -381,9 +384,9 @@ test_that("save updates original snapshot to match current data", {
 test_that("save resets modified_cells counter to zero", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 66.6)
-  store$update_cell(2, "cyl", 4L)
-  store$update_cell(3, "hp", 300)
+  store$update_cell(1, "AGE", 66.6)
+  store$update_cell(2, "BMIBL", 4L)
+  store$update_cell(3, "DURDIS", 30)
   expect_equal(store$get_modified_count(), 3)
 
   # Act
@@ -434,32 +437,32 @@ test_that("save works across multiple modify-save cycles", {
   store <- DataStore$new()
 
   # Act & Assert - First cycle
-  store$update_cell(1, "mpg", 55.5)
+  store$update_cell(1, "AGE", 55.5)
   expect_equal(store$get_modified_count(), 1)
   store$save()
   expect_equal(store$get_modified_count(), 0)
-  expect_equal(store$data[1, "mpg"], 55.5)
-  expect_equal(store$original[1, "mpg"], 55.5)
+  expect_equal(store$data[1, "AGE"], 55.5)
+  expect_equal(store$original[1, "AGE"], 55.5)
 
   # Act & Assert - Second cycle
-  store$update_cell(2, "cyl", 4L)
+  store$update_cell(2, "BMIBL", 4L)
   expect_equal(store$get_modified_count(), 1)
   store$save()
   expect_equal(store$get_modified_count(), 0)
-  expect_equal(as.numeric(as.vector(store$data[2, "cyl"])), 4L)
-  expect_equal(as.numeric(as.vector(store$original[2, "cyl"])), 4L)
+  expect_equal(as.numeric(as.vector(store$data[2, "BMIBL"])), 4L)
+  expect_equal(as.numeric(as.vector(store$original[2, "BMIBL"])), 4L)
 
   # Act & Assert - Third cycle
-  store$update_cell(3, "hp", 444)
+  store$update_cell(3, "DURDIS", 44)
   expect_equal(store$get_modified_count(), 1)
   store$save()
   expect_equal(store$get_modified_count(), 0)
 
   # Assert final database state
-  db_data <- DBI::dbReadTable(store$con, "mtcars")
-  expect_equal(db_data[1, "mpg"], 55.5)
-  expect_equal(as.numeric(as.vector(db_data[2, "cyl"])), 4)
-  expect_equal(db_data[3, "hp"], 444)
+  db_data <- DBI::dbReadTable(store$con, "adsl")
+  expect_equal(db_data[1, "AGE"], 55.5)
+  expect_equal(as.numeric(as.vector(db_data[2, "BMIBL"])), 4)
+  expect_equal(db_data[3, "DURDIS"], 44)
 
   # Cleanup
   rm(store)
@@ -469,7 +472,7 @@ test_that("save works across multiple modify-save cycles", {
 test_that("save produces cli_inform success message", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 33.3)
+  store$update_cell(1, "AGE", 33.3)
 
   # Act & Assert - Check for informational message
   expect_message(
@@ -484,7 +487,7 @@ test_that("save produces cli_inform success message", {
 test_that("save throws cli_abort when connection is closed before save", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 50.0)
+  store$update_cell(1, "AGE", 50.0)
 
   # Close the connection manually to simulate a connection failure
   DBI::dbDisconnect(store$con, shutdown = TRUE)
@@ -503,7 +506,7 @@ test_that("save throws cli_abort when connection is closed before save", {
 test_that("save error message includes database error context", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 50.0)
+  store$update_cell(1, "AGE", 50.0)
 
   # Close connection to force error
   DBI::dbDisconnect(store$con, shutdown = TRUE)
@@ -580,10 +583,10 @@ test_that("save with empty data frame throws validation error", {
 test_that("save validates column structure integrity", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 50.0)
+  store$update_cell(1, "AGE", 50.0)
 
   # Corrupt data by removing required column
-  store$data$mpg <- NULL
+  store$data$AGE <- NULL
 
   # Act & Assert - Should fail validation or write
   expect_error(
@@ -601,25 +604,25 @@ test_that("save maintains data integrity across multiple operations", {
   store <- DataStore$new()
 
   # Act - Complex sequence
-  store$update_cell(1, "mpg", 11.1)
-  store$update_cell(5, "hp", 555)
-  store$update_cell(10, "cyl", 4L)
+  store$update_cell(1, "AGE", 11.1)
+  store$update_cell(5, "DURDIS", 55)
+  store$update_cell(10, "TRTDUR", 4L)
   store$save()
 
   # Verify database persistence
-  db_data <- DBI::dbReadTable(store$con, "mtcars")
+  db_data <- DBI::dbReadTable(store$con, "adsl")
 
   # Assert
-  expect_equal(db_data[1, "mpg"], 11.1)
-  expect_equal(db_data[5, "hp"], 555)
-  expect_equal(as.numeric(as.vector(db_data[10, "cyl"])), 4L)
+  expect_equal(db_data[1, "AGE"], 11.1)
+  expect_equal(db_data[5, "DURDIS"], 55)
+  expect_equal(as.numeric(as.vector(db_data[10, "TRTDUR"])), 4L)
 
   # Modify again and save
-  store$update_cell(1, "mpg", 22.2)
+  store$update_cell(1, "AGE", 22.2)
   store$save()
 
-  db_data <- DBI::dbReadTable(store$con, "mtcars")
-  expect_equal(db_data[1, "mpg"], 22.2)
+  db_data <- DBI::dbReadTable(store$con, "adsl")
+  expect_equal(db_data[1, "AGE"], 22.2)
 
   # Cleanup
   rm(store)
@@ -629,21 +632,21 @@ test_that("save maintains data integrity across multiple operations", {
 test_that("save prevents data loss on revert after save", {
   # Arrange
   store <- DataStore$new()
-  original_mpg_1 <- store$data[1, "mpg"]
+  original_AGE_1 <- store$data[1, "AGE"]
 
   # Act
-  store$update_cell(1, "mpg", 99.9)
+  store$update_cell(1, "AGE", 99.9)
   store$save()
 
   # Modify again
-  store$update_cell(1, "mpg", 77.7)
+  store$update_cell(1, "AGE", 77.7)
 
   # Revert to last save (original should be 99.9, not initial value)
   store$revert()
 
   # Assert
-  expect_equal(store$data[1, "mpg"], 99.9)
-  expect_failure(expect_equal(store$data[1, "mpg"], original_mpg_1))
+  expect_equal(store$data[1, "AGE"], 99.9)
+  expect_failure(expect_equal(store$data[1, "AGE"], original_AGE_1))
 
   # Cleanup
   rm(store)
@@ -658,7 +661,7 @@ test_that("update_cell fails when connection is closed (indirect test)", {
   DBI::dbDisconnect(store$con, shutdown = TRUE)
 
   # Act - Update still works (doesn't touch DB), but save will fail
-  expect_true(store$update_cell(1, "mpg", 50.0))
+  expect_true(store$update_cell(1, "AGE", 50.0))
 
   # Verify save fails with closed connection
   expect_error(
@@ -674,7 +677,7 @@ test_that("update_cell fails when connection is closed (indirect test)", {
 test_that("save fails gracefully when original snapshot is corrupted", {
   # Arrange
   store <- DataStore$new()
-  store$update_cell(1, "mpg", 50.0)
+  store$update_cell(1, "AGE", 50.0)
 
   # Corrupt original to cause state inconsistency
   store$original <- NULL
@@ -729,13 +732,13 @@ test_that("modified_cells counter reflects actual edits", {
   # Act & Assert
   expect_equal(store$get_modified_count(), 0)
 
-  store$update_cell(1, "mpg", 50.0)
+  store$update_cell(1, "AGE", 50.0)
   expect_equal(store$get_modified_count(), 1)
 
-  store$update_cell(2, "cyl", 6L)
+  store$update_cell(2, "DURDIS", 6L)
   expect_equal(store$get_modified_count(), 2)
 
-  store$update_cell(3, "hp", 300)
+  store$update_cell(3, "TRTDUR", 30)
   expect_equal(store$get_modified_count(), 3)
 
   # Save resets counter
@@ -743,7 +746,7 @@ test_that("modified_cells counter reflects actual edits", {
   expect_equal(store$get_modified_count(), 0)
 
   # Revert also resets counter
-  store$update_cell(1, "mpg", 60.0)
+  store$update_cell(1, "AGE", 60.0)
   expect_equal(store$get_modified_count(), 1)
 
   store$revert()

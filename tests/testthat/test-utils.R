@@ -8,7 +8,7 @@ test_that("validate_db_path accepts custom parameters", {
   result <- validate_db_path(
     package = "editable.submissionsync",
     subdir = "extdata",
-    filename = "mtcars.duckdb"
+    filename = "adsl.duckdb"
   )
   expect_true(file.exists(result))
 })

@@ -7,7 +7,7 @@
 validate_db_path(
   package = "editable.submissionsync",
   subdir = "extdata",
-  filename = "mtcars.duckdb"
+  filename = "mtcars"
 )
 }
 \arguments{

@@ -589,7 +589,7 @@ validate_save_structure <- function(data, original) {
 delete_mtcars_table <- function(con) {
   tryCatch({
     # DROP TABLE IF EXISTS is safe - no error if table doesn't exist
-    DBI::dbExecute(con, "DROP TABLE IF EXISTS mtcars")
+    DBI::dbExecute(con, "DROP TABLE IF EXISTS adsl")
     invisible(NULL)
   }, error = function(e) {
     cli::cli_abort(c(
@@ -617,7 +617,7 @@ delete_mtcars_table <- function(con) {
 #' @keywords internal
 write_mtcars_to_db <- function(con, data) {
   tryCatch({
-    DBI::dbWriteTable(con, "mtcars", data, overwrite = TRUE)
+    DBI::dbWriteTable(con, "adsl", data, overwrite = TRUE)
     invisible(NULL)
   }, error = function(e) {
     cli::cli_abort(c(
