@@ -42,7 +42,8 @@
 #'
 #' @import htmlwidgets
 #' @export
-hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
+hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL, 
+                      editable_cols = NULL) {
 
   if (missing(data) || is.null(data)) {
     stop("'data' parameter is required")
@@ -50,6 +51,21 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
 
   if (!is.data.frame(data)) {
     stop("'data' must be a data.frame")
+  }
+  if (is.null(editable_cols)) {
+    schema_config <- tryCatch({
+      get_golem_config("schema")
+    }, error = function(e) {
+      NULL
+    })
+    
+    if (!is.null(schema_config)) {
+      editable_cols <- sapply(names(data), function(col_name) {
+        isTRUE(schema_config[[col_name]]$editable %||% TRUE)
+      }, USE.NAMES = TRUE)
+    } else {
+      editable_cols <- setNames(rep(TRUE, ncol(data)), names(data))
+    }
   }
 
   col_widths <- sapply(names(data), function(col_name) {
@@ -72,6 +88,7 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
     colHeaders = as.list(names(data)),
     colTypes = as.list(sapply(data, function(col) class(col)[1], USE.NAMES = FALSE)),
     colWidths = unname(col_widths),
+    editableCols = editable_cols,
     stretchH = "all",
     autoRowSize = FALSE,
     rowHeights = 30
