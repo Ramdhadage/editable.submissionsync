@@ -54,8 +54,8 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
 
   col_widths <- sapply(names(data), function(col_name) {
     col <- data[[col_name]]
-    header_width <- nchar(col_name) * 8 + 16
-    
+    header_width <- nchar(col_name) * 8 + 100
+
     content_width <- 0
     if (length(col) > 0) {
       sample_rows <- head(col, 50)
@@ -64,9 +64,9 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
       content_width <- max_content_length * 7.5 + 12  # 7.5px per char + padding
     }
     final_width <- max(header_width, content_width)
-    pmin(pmax(final_width, 80), 300)
+    pmin(pmax(final_width, 80), 500)
   })
-  
+
   x = list(
     data = data,
     colHeaders = as.list(names(data)),
