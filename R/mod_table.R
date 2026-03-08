@@ -188,6 +188,11 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       if (is.null(edit)) return()
 
       tryCatch({
+        schema_config <- get_golem_config("schema")
+        col_editable <- isTRUE(schema_config[[edit$col]]$editable %||% TRUE)
+        if (!col_editable) {
+          stop(sprintf("Column '%s' is not editable. Changes cannot be saved.", edit$col))
+        }    
         r_row <- edit$row + 1
 
         store_reactive()$update_cell(
