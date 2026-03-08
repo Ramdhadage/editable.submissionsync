@@ -52,14 +52,10 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
     stop("'data' must be a data.frame")
   }
 
-    # Intelligent column width calculation based on header + content
   col_widths <- sapply(names(data), function(col_name) {
     col <- data[[col_name]]
-    
-    # Calculate header width (8px per character + padding)
     header_width <- nchar(col_name) * 8 + 16
     
-    # Calculate content width from sample (first 50 rows max)
     content_width <- 0
     if (length(col) > 0) {
       sample_rows <- head(col, 50)
@@ -67,11 +63,7 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
       max_content_length <- max(nchar(sample_str), na.rm = TRUE)
       content_width <- max_content_length * 7.5 + 12  # 7.5px per char + padding
     }
-    
-    # Use maximum of header and content
     final_width <- max(header_width, content_width)
-    
-    # Apply bounds: minimum 80px, maximum 300px
     pmin(pmax(final_width, 80), 300)
   })
   
@@ -79,7 +71,7 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL) {
     data = data,
     colHeaders = as.list(names(data)),
     colTypes = as.list(sapply(data, function(col) class(col)[1], USE.NAMES = FALSE)),
-    colWidths = unname(col_widths),  # Convert to unnamed numeric vector for Handsontable
+    colWidths = unname(col_widths),
     stretchH = "all",
     autoRowSize = FALSE,
     rowHeights = 30

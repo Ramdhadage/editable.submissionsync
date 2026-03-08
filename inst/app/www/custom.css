@@ -163,16 +163,14 @@
 p{
   color: gray;
 }
-
-/* Hotwidget Container: Responsive layout with intelligent scrolling */
 .hotwidget-container {
   position: relative;
   width: 100%;
-  min-width: 0;  /* Allows flex shrinking below min-content */
+  min-width: 0;  
   overflow-x: auto;
   overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;  /* Smooth momentum scrolling on iOS */
-  contain: layout style paint;  /* Performance: prevent layout thrashing */
+  -webkit-overflow-scrolling: touch;
+  contain: layout style paint; 
 }
 
 .hotwidget {
@@ -181,7 +179,7 @@ p{
   position: relative;
   overflow: visible;
   width: 100%;
-  min-width: max-content;  /* Force table to natural width, enable horizontal scroll */
+  min-width: max-content;
 }
 
 .hotwidget .handsontable {
