@@ -43,7 +43,10 @@ mod_table_ui <- function(id) {
         class = "card-panel",
         bslib::card_header("Data Table"),
         bslib::card_body(
-          hotwidgetOutput(ns("table"), height = "500px")
+          div(
+            class = "hotwidget-container",
+            hotwidgetOutput(ns("table"), height = "500px")
+          )
         )
       ),
 

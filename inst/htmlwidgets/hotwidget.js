@@ -39,8 +39,8 @@ HTMLWidgets.widget({
           manualColumnResize: true,
           contextMenu: true,
           search : true,
-          stretchH: 'all',
-         // colWidths: colWidths,
+          stretchH: 'none',
+          colWidths: colWidths,
           rowHeights: rowHeights,
           autoRowSize: x.autoRowSize !== undefined ? x.autoRowSize : false,
           pagination: {

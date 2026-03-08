@@ -164,17 +164,31 @@ p{
   color: gray;
 }
 
+/* Hotwidget Container: Responsive layout with intelligent scrolling */
+.hotwidget-container {
+  position: relative;
+  width: 100%;
+  min-width: 0;  /* Allows flex shrinking below min-content */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;  /* Smooth momentum scrolling on iOS */
+  contain: layout style paint;  /* Performance: prevent layout thrashing */
+}
+
 .hotwidget {
   border: 1px solid #dee2e6;
   border-radius: 6px;
   position: relative;
   overflow: visible;
+  width: 100%;
+  min-width: max-content;  /* Force table to natural width, enable horizontal scroll */
 }
 
 .hotwidget .handsontable {
   --ht-cell-horizontal-border-color: transparent;
   --ht-cell-vertical-border-color: #dee2e6;
   --ht-border-color: #dee2e6;
+  width: 100%;
 }
 
 
