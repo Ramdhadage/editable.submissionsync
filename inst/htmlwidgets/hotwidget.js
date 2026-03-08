@@ -45,7 +45,7 @@ HTMLWidgets.widget({
           autoRowSize: x.autoRowSize !== undefined ? x.autoRowSize : false,
           pagination: {
             pageSize: 50,
-            pageSizeList: ['auto', 5, 10, 20, 50, 100],
+            pageSizeList: ['auto', 5, 10, 20, 50, 100,200, 500, 1000],
             initialPage: 1,
             showPageSize: true,
             showCounter: true,
