@@ -100,11 +100,11 @@ establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
 #' data <- load_mtcars_data(con, table = "mtcars")
 #' }
 #' @keywords internal
-load_data <- function(con, table = "adsl", default_rownames = NULL) {
+load_data <- function(con, table = "adsl", default_rownames = NULL, schema = NULL) {
   tryCatch({
     # Read table with type preservation
     result <-  DBI::dbReadTable(con, table)
-    # result <- set_column_type(result)
+    result <- set_column_type(result, schema)
     return(result)
   }, error = function(e) {
     cli::cli_warn(c(
@@ -130,20 +130,33 @@ load_data <- function(con, table = "adsl", default_rownames = NULL) {
 #' transformed_mtcars <- set_mtcars_column_type(mtcars)
 #' }
 #' @keywords internal
-set_column_type <- function(data) {
+set_column_type <- function(data, schema = NULL) {
   if (!is.data.frame(data)) {
     stop("Input must be a data frame")
   }
-
-  # Apply transformations
-  for (col_name in names(data)) {
-    if (col_name %in% "am") {
-      data[[col_name]] <- as.logical(data[[col_name]])
-    } else if (col_name %in% c("vs", "cyl", "gear", "carb")) {
-      data[[col_name]] <- as.factor(data[[col_name]])
+  tryCatch({
+    for (col_name in names(data)) {
+      data[[col_name]] <- suppressWarnings({
+        switch(schema[[col_name]]$type,
+               "numeric" = as.numeric(data[[col_name]]),
+               "integer" = as.integer(data[[col_name]]),
+               "character" = as.character(data[[col_name]]),
+               "logical" = as.logical(data[[col_name]]),
+               "factor" = factor(data[[col_name]], levels = unique(data[[col_name]])),
+               as(data[[col_name]], schema[[col_name]]$type)
+        )
+      })
     }
-  }
-
+  },
+  error = function(e) {
+    cli::cli_abort(c(
+      "Type coercion failed",
+      "i" = "Column: {col_name}",
+      "i" = "Value: {value}",
+      "i" = "Expected type: {class(original_data[[col_name]])[1]}",
+      "x" = "Error: {conditionMessage(e)}"
+    ))
+  })
   return(data)
 }
 

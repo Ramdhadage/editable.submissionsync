@@ -60,7 +60,7 @@ DataStore <- R6::R6Class(
         private$db_path <- validate_db_path(subdir = db_config$path,
                                             filename = db_config$name)
         self$con <- establish_duckdb_connection(private$db_path, read_only = FALSE)
-        query_result <- load_data(self$con, table = "adsl")
+        query_result <- load_data(self$con, table = "adsl", schema = schema_config)
         self$original <- data.frame(query_result, check.names = TRUE)
         self$data <- data.frame(query_result, check.names = TRUE)
         private$modified_cells <- 0
