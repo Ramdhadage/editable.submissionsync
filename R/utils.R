@@ -117,47 +117,106 @@ load_data <- function(con, table = "adsl", default_rownames = NULL, schema = NUL
     data.frame()
   })
 }
-#' Convert mtcars columns to appropriate data types
+#' Apply Column Type Schema to Data Frame
 #'
-#' Transforms specific columns in a data frame to more appropriate data types:
-#' - 'am' column to logical (automatic vs manual transmission)
-#' - 'vs', 'cyl', 'gear', 'carb' columns to factors
+#' @description
+#' Type-safe coercion of data frame columns to match a schema specification.
+#' Applies schema from a structured list where each column has a `type` field.
+#' If schema is NULL, returns data unchanged (graceful degradation).
 #'
-#' @param data A data frame to transform
-#' @return A data frame with transformed column types
+#' @details
+#' **Schema Structure:**
+#' A nested list where each element is a column name with a `type` field.
+#' Example:
+#' ```
+#' schema <- list(
+#'   AGE = list(type = "numeric"),
+#'   ARM = list(type = "factor"),
+#'   SITEID = list(type = "character", editable = FALSE)
+#' )
+#' ```
+#'
+#' **Supported Types:**
+#' - `"numeric"` — converts to `as.numeric()`
+#' - `"integer"` — converts to `as.integer()`
+#' - `"character"` — converts to `as.character()`
+#' - `"logical"` — converts to `as.logical()`
+#' - `"Date"` — converts to `as.Date()`
+#' - `"factor"` — converts to `factor()` (uses unique values as levels)
+#'
+#' **Error Handling:**
+#' Deterministic validation (data structure, bounds) runs first.
+#' Type coercion errors throw `cli::cli_abort()` with rich context.
+#'
+#' @param data data.frame. The data frame to transform.
+#' @param schema list or NULL. Nested list with column names and type specifications.
+#'   If NULL, returns data unchanged (no-op).
+#'
+#' @return data.frame, invisibly. Transformed data with columns coerced to schema types.
+#'   Returns same object (in-place modification) when successful.
+#'   Throws error on validation failure.
+#'
 #' @examples
 #' \dontrun{
-#' transformed_mtcars <- set_mtcars_column_type(mtcars)
+#' schema <- list(
+#'   mpg = list(type = "numeric"),
+#'   cyl = list(type = "factor")
+#' )
+#' transformed <- set_column_type(mtcars, schema)
 #' }
 #' @keywords internal
+#' @importFrom cli cli_abort cli_warn
 set_column_type <- function(data, schema = NULL) {
-  if (!is.data.frame(data)) {
-    stop("Input must be a data frame")
-  }
-  tryCatch({
-    for (col_name in names(data)) {
-      data[[col_name]] <- suppressWarnings({
-        switch(schema[[col_name]]$type,
-               "numeric" = as.numeric(data[[col_name]]),
-               "integer" = as.integer(data[[col_name]]),
-               "character" = as.character(data[[col_name]]),
-               "logical" = as.logical(data[[col_name]]),
-               "factor" = factor(data[[col_name]], levels = unique(data[[col_name]])),
-               as(data[[col_name]], schema[[col_name]]$type)
+    checkmate::assert_data_frame(data, null.ok = FALSE)
+    checkmate::assert_list(schema, null.ok = FALSE, min.len = 1)
+  coerce_single_column <- function(col_data, target_type, col_name, original_data) {
+    tryCatch({
+      # Apply type coercion
+      coerced <- suppressWarnings({
+        switch(target_type,
+          "numeric" = as.numeric(col_data),
+          "integer" = as.integer(col_data),
+          "character" = as.character(col_data),
+          "logical" = as.logical(col_data),
+          "Date" = as.Date(col_data),
+          "factor" = factor(col_data, levels = unique(col_data)),
+          as(col_data, target_type)
         )
       })
+
+      coerced
+    }, error = function(e) {
+      cli::cli_abort(c(
+        "Type coercion failed for column",
+        "i" = "Column: {col_name}",
+        "i" = "Target type: {target_type}",
+        "i" = "Current class: {paste(class(col_data), collapse = ', ')}",
+        "x" = "Coercion error: {conditionMessage(e)}"
+      ))
+    })
+  }
+  for (col_name in names(data)) {
+    if (col_name %in% names(schema)) {
+      target_type <- schema[[col_name]]$type
+
+      tryCatch({
+        checkmate::assert_character(target_type, len = 1)
+      }, error = function(e) {
+        cli::cli_abort(c(
+          "Schema type must be a single string",
+          "i" = "Column: {col_name}",
+          "x" = "{conditionMessage(e)}"
+        ))
+      })
+      data[[col_name]] <- coerce_single_column(
+        data[[col_name]],
+        target_type,
+        col_name,
+        data
+      )
     }
-  },
-  error = function(e) {
-    cli::cli_abort(c(
-      "Type coercion failed",
-      "i" = "Column: {col_name}",
-      "i" = "Value: {value}",
-      "i" = "Expected type: {class(original_data[[col_name]])[1]}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
-  return(data)
+  }
+  invisible(data)
 }
 
 
