@@ -904,3 +904,189 @@ test_that("DataStore$save() works across multiple cycles", {
   rm(store)
   gc()
 })
+test_that("set_column_type returns data invisibly when schema is NULL", {
+  data <- mtcars[1:3, ]
+  result <- set_column_type(data, schema = NULL)
+
+  # Should return invisibly (wrapped in invisible())
+  expect_identical(result, data)
+
+  # Data should be unchanged
+  expect_equal(nrow(data), 3)
+  expect_equal(ncol(data), ncol(mtcars))
+})
+
+test_that("set_column_type applies numeric type coercion", {
+  data <- data.frame(
+    id = c("1", "2", "3"),
+    value = c("10.5", "20.3", "30.1"),
+    stringsAsFactors = FALSE
+  )
+
+  schema <- list(
+    value = list(type = "numeric")
+  )
+
+  result <- set_column_type(data, schema)
+
+  expect_identical(typeof(result$value), "double")
+  expect_equal(result$value, c(10.5, 20.3, 30.1))
+})
+
+test_that("set_column_type applies integer type coercion", {
+  data <- data.frame(
+    id = c("1", "2", "3"),
+    count = c("10", "20", "30"),
+    stringsAsFactors = FALSE
+  )
+
+  schema <- list(
+    count = list(type = "integer")
+  )
+
+  result <- set_column_type(data, schema)
+
+  expect_identical(typeof(result$count), "integer")
+  expect_equal(result$count, c(10L, 20L, 30L))
+})
+
+test_that("set_column_type applies character type coercion", {
+  data <- data.frame(
+    id = c(1, 2, 3),
+    name = c(NA, 20, 30)
+  )
+
+  schema <- list(
+    name = list(type = "character")
+  )
+
+  result <- set_column_type(data, schema)
+
+  expect_identical(typeof(result$name), "character")
+  expect_equal(result$name[1], "NA")
+  expect_equal(result$name[2], "20")
+})
+
+test_that("set_column_type applies factor type coercion", {
+  data <- data.frame(
+    treatment = c("A", "B", "A"),
+    stringsAsFactors = FALSE
+  )
+
+  schema <- list(
+    treatment = list(type = "factor")
+  )
+
+  result <- set_column_type(data, schema)
+
+  expect_true(is.factor(result$treatment))
+  expect_equal(levels(result$treatment), c("A", "B"))
+})
+
+test_that("set_column_type throws cli_abort for non-data.frame", {
+  expect_error(
+    set_column_type(list(a = 1), schema = list(a = list(type = "numeric"))),
+    class = "rlang_error"
+  )
+})
+
+test_that("set_column_type throws cli_abort for NULL data", {
+  expect_error(
+    set_column_type(NULL, schema = list(a = list(type = "numeric"))),
+    class = "rlang_error"
+  )
+})
+
+test_that("set_column_type throws cli_abort when schema missing type field", {
+  data <- data.frame(x = 1:3)
+  schema <- list(
+    x = list(description = "This has no type field")
+  )
+
+  expect_error(
+    set_column_type(data, schema),
+    class = "rlang_error"
+  )
+})
+
+test_that("set_column_type throws cli_abort when schema is not a list", {
+  data <- data.frame(x = 1:3)
+
+  expect_error(
+    set_column_type(data, schema = "not_a_list"),
+    class = "rlang_error"
+  )
+})
+
+test_that("set_column_type skips columns not in schema", {
+  data <- data.frame(
+    id = c("1", "2", "3"),
+    value = c("10", "20", "30"),
+    ignored = c(100, 200, 300),
+    stringsAsFactors = FALSE
+  )
+
+  schema <- list(
+    value = list(type = "numeric")
+  )
+
+  result <- set_column_type(data, schema)
+
+  # value should be numeric
+  expect_identical(typeof(result$value), "double")
+
+  # ignored should remain as-is (numeric)
+  expect_equal(result$ignored, c(100, 200, 300))
+
+  # id should remain as character
+  expect_identical(typeof(result$id), "character")
+})
+
+test_that("set_column_type returns data invisibly", {
+  data <- data.frame(x = c("1", "2", "3"))
+  schema <- list(x = list(type = "numeric"))
+
+  # Capture the return value (invisibly)
+  result <- withVisible(set_column_type(data, schema))
+
+  # Should be invisible
+  expect_false(result$visible)
+
+  # But should still have the data
+  expect_identical(typeof(result$value$x), "double")
+})
+
+test_that("set_column_type handles data with editable metadata in schema", {
+  data <- data.frame(
+    id = c("1", "2", "3"),
+    arm = c("A", "B", "A"),
+    stringsAsFactors = FALSE
+  )
+
+  schema <- list(
+    id = list(type = "character", editable = FALSE),
+    arm = list(type = "factor", editable = TRUE)
+  )
+
+  # Should handle extra metadata without error
+  result <- set_column_type(data, schema)
+
+  expect_true(is.factor(result$arm))
+  expect_identical(typeof(result$id), "character")
+})
+
+test_that("set_column_type provides rich error context on coercion failure", {
+  data <- data.frame(
+    age = c("25", "invalid", "30")
+  )
+
+  schema <- list(
+    age = list(type = "numeric")
+  )
+
+  # Should throw error with context including column name and value
+  expect_error(
+    set_column_type(data, schema),
+    class = "rlang_error"
+  )
+})
