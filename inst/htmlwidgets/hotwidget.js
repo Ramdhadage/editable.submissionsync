@@ -53,10 +53,12 @@ HTMLWidgets.widget({
           },
            columns: originalColHeaders.map((colName) => {
             const colType = colTypes[colName];
+            const isEditable = x.editableCols && x.editableCols[colName] !== false;
             const config = { data: colName };
 
-            if (colName === 'MODEL') {
+            if (!isEditable) {
               config.readOnly = true;
+              config.className = 'ht-readonly';
             }
             switch(colType) {
               case 'numeric':
@@ -113,6 +115,11 @@ HTMLWidgets.widget({
 
             const change = changes[0];
             const [row, prop, oldValue, newValue] = change;
+            const isEditable = x.editableCols && x.editableCols[prop] !== false;
+            if (!isEditable) {
+              hotInstance.undoRedo.undo();
+              return;
+            }
 
             if (oldValue === newValue) {
               return;
@@ -144,7 +151,6 @@ HTMLWidgets.widget({
 
       resize: function(width, height) {
 
-        // TODO: code to re-render the widget with a new size
         if (hotInstance) {
 
           el.style.width = width + 'px';
