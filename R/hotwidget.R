@@ -77,10 +77,10 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL,
       sample_rows <- head(col, 50)
       sample_str <- as.character(sample_rows)
       max_content_length <- max(nchar(sample_str), na.rm = TRUE)
-      content_width <- max_content_length * 7.5 + 12  # 7.5px per char + padding
+      content_width <- max_content_length * 7.5 + 50
     }
     final_width <- max(header_width, content_width)
-    pmin(pmax(final_width, 80), 500)
+    pmin(pmax(final_width, 100), 500)
   })
 
   x = list(

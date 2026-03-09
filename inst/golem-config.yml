@@ -94,12 +94,10 @@ default:
 
       SEX:
         type: "factor"
-        editable: false
 
       ETHNIC:
         type: "factor"
 
-      # Population Flags
       SAFFL:
         type: "factor"
 

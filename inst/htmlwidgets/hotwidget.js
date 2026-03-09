@@ -83,8 +83,8 @@ HTMLWidgets.widget({
                 config.type = 'checkbox';
                 break;
              case 'factor':
-                config.type = 'select';
-                config.selectOptions = [...new Set(x.data[colName])];
+                config.type = 'dropdown';
+                config.source = [...new Set(x.data[colName])];
                 break;
             default:
                 config.type = 'text';
