@@ -27,10 +27,15 @@ HTMLWidgets.widget({
         el.innerText = "";
         const colWidths = x.colWidths || null;
         const rowHeights = x.rowHeights || 'auto';
+        const sanitizeValue = (value) => {
+          if (typeof value !== 'string') return value;
+          return value.replace(/<[^>]*>/g, '');
+        };
         hotInstance = new Handsontable(el, {
           themeName: 'ht-theme-main',
           data: currentData,
           colHeaders: colHeaders,
+          sanitizer: sanitizeValue,
           className: 'htCenter',
           rowHeaders: false,
           columnSorting: true,
@@ -64,14 +69,18 @@ HTMLWidgets.widget({
               case 'numeric':
                 config.type = 'numeric';
                 config.numericFormat = {
-                  pattern: '0,0.00'
+                  style: 'decimal',
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
                 };
                 break;
 
               case 'integer':
                 config.type = 'numeric';
                 config.numericFormat = {
-                  pattern: '0,0'
+                 style: 'decimal',
+                 minimumFractionDigits: 0,
+                 maximumFractionDigits: 0
                 };
                 break;
 
