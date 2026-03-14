@@ -4,7 +4,13 @@
 \alias{hotwidget}
 \title{Handsontable Interactive Table Widget}
 \usage{
-hotwidget(data, width = NULL, height = NULL, elementId = NULL)
+hotwidget(
+  data,
+  width = NULL,
+  height = NULL,
+  elementId = NULL,
+  editable_cols = NULL
+)
 }
 \arguments{
 \item{data}{Data frame to display and edit. Required.}

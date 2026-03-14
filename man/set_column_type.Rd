@@ -2,26 +2,59 @@
 % Please edit documentation in R/utils.R
 \name{set_column_type}
 \alias{set_column_type}
-\title{Convert mtcars columns to appropriate data types}
+\title{Apply Column Type Schema to Data Frame}
 \usage{
-set_column_type(data)
+set_column_type(data, schema = NULL)
 }
 \arguments{
-\item{data}{A data frame to transform}
+\item{data}{data.frame. The data frame to transform.}
+
+\item{schema}{list or NULL. Nested list with column names and type specifications.
+If NULL, returns data unchanged (no-op).}
 }
 \value{
-A data frame with transformed column types
+data.frame, invisibly. Transformed data with columns coerced to schema types.
+Returns same object (in-place modification) when successful.
+Throws error on validation failure.
 }
 \description{
-Transforms specific columns in a data frame to more appropriate data types:
-\itemize{
-\item 'am' column to logical (automatic vs manual transmission)
-\item 'vs', 'cyl', 'gear', 'carb' columns to factors
+Type-safe coercion of data frame columns to match a schema specification.
+Applies schema from a structured list where each column has a \code{type} field.
+If schema is NULL, returns data unchanged (graceful degradation).
 }
+\details{
+\strong{Schema Structure:}
+A nested list where each element is a column name with a \code{type} field.
+Example:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{schema <- list(
+  AGE = list(type = "numeric"),
+  ARM = list(type = "factor"),
+  SITEID = list(type = "character", editable = FALSE)
+)
+}\if{html}{\out{</div>}}
+
+\strong{Supported Types:}
+\itemize{
+\item \code{"numeric"} — converts to \code{as.numeric()}
+\item \code{"integer"} — converts to \code{as.integer()}
+\item \code{"character"} — converts to \code{as.character()}
+\item \code{"logical"} — converts to \code{as.logical()}
+\item \code{"Date"} — converts to \code{as.Date()}
+\item \code{"factor"} — converts to \code{factor()} (uses unique values as levels)
+}
+
+\strong{Error Handling:}
+Deterministic validation (data structure, bounds) runs first.
+Type coercion errors throw \code{cli::cli_abort()} with rich context.
 }
 \examples{
 \dontrun{
-transformed_mtcars <- set_mtcars_column_type(mtcars)
+schema <- list(
+  mpg = list(type = "numeric"),
+  cyl = list(type = "factor")
+)
+transformed <- set_column_type(mtcars, schema)
 }
 }
 \keyword{internal}

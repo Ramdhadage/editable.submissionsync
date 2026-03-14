@@ -4,7 +4,7 @@
 \alias{load_data}
 \title{Load Data from DuckDB Table}
 \usage{
-load_data(con, table = "adsl", default_rownames = NULL)
+load_data(con, table = "adsl", default_rownames = NULL, schema = NULL)
 }
 \arguments{
 \item{con}{DBI connection object (active DuckDB connection).}
