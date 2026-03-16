@@ -17,7 +17,7 @@ app_ui <- function(request) {
         title = "Home",
         value = "home",
 
-        strong(h1("MTCars Dataset")),
+        strong(h1("ADaM ADSL Dataset")),
         p("Interactive data table with real-time editing"),
         skeleton_replacement_script("table"),
         skeleton_content("table"),
