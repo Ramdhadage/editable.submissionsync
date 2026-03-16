@@ -84,6 +84,14 @@ HTMLWidgets.widget({
                 };
                 break;
 
+              case 'Date':
+                config.type = 'intl-date';
+                 config.dateFormat = {
+                 year: 'numeric',
+                 month: '2-digit',
+                 day: '2-digit'
+                };
+                break;
               case 'character':
                 config.type = 'text';
                 break;
