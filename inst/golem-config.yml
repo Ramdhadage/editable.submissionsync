@@ -156,10 +156,10 @@ default:
         type: "Date"
 
       RFSTDTC:
-        type: "character"
+        type: "Date"
 
       RFENDTC:
-        type: "character"
+        type: "Date"
 
       VISNUMEN:
         type: "numeric"
