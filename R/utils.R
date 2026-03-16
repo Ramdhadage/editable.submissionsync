@@ -372,6 +372,7 @@ coerce_value <- function(value, col_name, original_data) {
              "integer" = as.integer(value),
              "character" = as.character(value),
              "logical" = as.logical(value),
+             "Date" = as.Date(value),
              "factor" = factor(value, levels = levels(original_data[[col_name]])),
              as(value, original_type)
       )
