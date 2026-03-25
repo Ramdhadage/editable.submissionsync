@@ -9,15 +9,34 @@ HTMLWidgets.widget({
     let hotInstance = null;
     let currentData = null;
     let isUpdating = false;
-
+    let lastUpdateType = null;
+    let originalColHeaders = null;
 
     return {
 
       renderValue: function(x) {
 
-        // TODO: code to render the widget, e.g.
+        const isDelta = x.type === 'delta' && Array.isArray(x.updatedCells) && hotInstance;
+        if (isDelta) {
+          console.time('Delta update');
+          try {
+            const cellUpdates = x.updatedCells.map(cell => [
+              cell.row - 1, 
+              cell.col,
+              cell.value
+            ]);
+            hotInstance.setDataAtCell(cellUpdates);
+            console.timeEnd('Delta update');
+          } catch (e) {
+            console.error('Delta update failed, falling back to full render:', e);
+            lastUpdateType = 'full';
+          }
+          return;
+        }
+        console.time('Full render');
+        lastUpdateType = 'full';
         currentData = HTMLWidgets.dataframeToD3(x.data);
-        const originalColHeaders = x.colHeaders || Object.keys(currentData[0] || {});
+        originalColHeaders = x.colHeaders || Object.keys(currentData[0] || {});
         const colHeaders = originalColHeaders.map((header) => header.toUpperCase());
         const colTypes = x.colTypes || {};
         if (hotInstance) {
@@ -48,6 +67,12 @@ HTMLWidgets.widget({
           colWidths: colWidths,
           rowHeights: rowHeights,
           autoRowSize: x.autoRowSize !== undefined ? x.autoRowSize : false,
+          fragmentSelection: false,      
+          disableVisualSelection: false,    
+          viewportRowRenderingOffset: 50, 
+          viewportColumnRenderingOffset: 10,
+          skipRowOnPaste: true,
+          observeDOMVisibility: true,
           pagination: {
             pageSize: 50,
             pageSizeList: ['auto', 5, 10, 20, 50, 100,200, 500, 1000],
@@ -164,6 +189,8 @@ HTMLWidgets.widget({
           licenseKey: 'non-commercial-and-evaluation',
         })
 
+        console.timeEnd('Full render');
+        el.style.contain = 'layout style paint';
       },
 
       resize: function(width, height) {
