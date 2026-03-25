@@ -136,23 +136,37 @@ DataStore <- R6::R6Class(
         validate_summary_data(self$data)
 
         numeric_cols <- detect_numeric_columns(self$data)
-
-        numeric_means <- if (length(numeric_cols) > 0) {
-          calculate_column_means(self$data, numeric_cols)
-        } else {
-          NULL
+        numeric_means <- NULL
+        if (length(numeric_cols) > 0) {
+          numeric_means <- sapply(numeric_cols, function(col) {
+            cache_key <- paste0(col, "_mean")
+            if (!is.null(private$.column_cache[[cache_key]])) {
+              return(private$.column_cache[[cache_key]])
+            }
+            col_mean <- suppressWarnings(mean(as.numeric(self$data[[col]]), na.rm = TRUE))
+            private$.column_cache[[cache_key]] <<- col_mean
+            col_mean
+          }, USE.NAMES = TRUE)
+        }
+        if (is.null(private$.column_cache$row_count)) {
+          private$.column_cache$row_count <<- nrow(self$data)
+        }
+        if (is.null(private$.column_cache$col_count)) {
+          private$.column_cache$col_count <<- ncol(self$data)
         }
 
         summary_list <- list(
-          message = sprintf("Rows: %d | Columns: %d", nrow(self$data), ncol(self$data)),
-          rows = nrow(self$data),
-          cols = ncol(self$data),
+          message = sprintf("Rows: %d | Columns: %d", 
+                           private$.column_cache$row_count, 
+                           private$.column_cache$col_count),
+          rows = private$.column_cache$row_count,
+          cols = private$.column_cache$col_count,
           numeric_means = numeric_means
         )
 
         private$.summary_cache <<- summary_list
 
-        cli::cli_inform("Summary generated for {nrow(self$data)} x {ncol(self$data)} dataset")
+        cli::cli_inform("Summary generated for {nrow(self$data)} x {ncol(self$data)} dataset (Phase 3: Column cache)")
         summary_list
       }, error = function(e) {
         cli::cli_abort(c(
@@ -201,7 +215,12 @@ DataStore <- R6::R6Class(
       self$data[row, col_name] <- coerced_value
 
       private$modified_cells <- private$modified_cells + 1
-      private$.summary_cache <- NULL  # Invalidate cache on data change
+      private$.summary_cache <- NULL  
+      cache_key <- paste0(col_name, "_mean")
+      private$.column_cache[[cache_key]] <- NULL
+      if (col_name %in% c("SUBJID", "SITEID")) {
+        private$.column_cache$row_count <- NULL
+      }
 
       invisible(TRUE)
     },
@@ -258,6 +277,7 @@ DataStore <- R6::R6Class(
     db_path = NULL,
     modified_cells = 0,
     .summary_cache = NULL,
+    .column_cache = list(),  
     finalize = function() {
       # Disconnect from DuckDB
       if (!is.null(self$con)) {
