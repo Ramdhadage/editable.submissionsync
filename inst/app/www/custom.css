@@ -60,6 +60,40 @@
 .ht_clone_top_left_corner {
   contain: layout style paint;
 }
+.hotwidget-container {
+  position: relative;
+  width: 100%;
+  min-width: 0;  
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  contain: layout style paint;
+  transform: translateZ(0);
+  will-change: contents;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+.hotwidget {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  min-width: max-content;
+  contain: layout style paint;
+  transform: translateZ(0);
+}
+
+.hotwidget .handsontable TD,
+.hotwidget .handsontable TH {
+  contain: layout style paint;
+  border-collapse: separate; /* Faster than collapse for performance */
+}
+
+.hotwidget .handsontable TBODY TR {
+  will-change: contents;
+  contain: layout style;
+}
 
 .card-panel {
   background: white;
@@ -183,32 +217,14 @@
 p{
   color: gray;
 }
-.hotwidget-container {
-  position: relative;
-  width: 100%;
-  min-width: 0;  
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  contain: layout style paint; 
-}
-
-.hotwidget {
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  position: relative;
-  overflow: visible;
-  width: 100%;
-  min-width: max-content;
-}
 
 .hotwidget .handsontable {
   --ht-cell-horizontal-border-color: transparent;
   --ht-cell-vertical-border-color: #dee2e6;
   --ht-border-color: #dee2e6;
   width: 100%;
+  contain: paint;
 }
-
 
 .hotwidget .htFiltersMenuLabel,
 .hotwidget .htFiltersMenuCondition,
