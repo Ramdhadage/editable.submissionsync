@@ -133,6 +133,16 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
 
     shinyjs::disable("save")
     shinyjs::disable("revert")
+    column_summary_dependencies <- list(
+      AGE = c("summary_age", "summary_rows"),
+      BMIBL = c("summary_bmibl", "summary_rows"),
+      SUBJID = c("summary_rows"),
+      SITEID = c("summary_rows")
+    )
+    row_count_trigger <- reactiveVal(0)     
+    age_trigger <- reactiveVal(0)            
+    bmibl_trigger <- reactiveVal(0)       
+    modified_trigger <- reactiveVal(0)   
 
     table_data <- shiny::reactive({
       store_trigger()
@@ -150,9 +160,26 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       if (nrow(data) == 0) {
         return(hotwidget(data = data.frame(Message = "No data loaded")))
       }
+      delta <- if (exists("last_delta_update", where = .GlobalEnv)) {
+        .GlobalEnv$last_delta_update
+      } else {
+        NULL
+      }
+      
+      if (!is.null(delta)) {
+        result <- hotwidget(
+          data = data,
+          type = "delta",
+          updatedCells = delta$updatedCells,
+          modifiedCount = delta$modifiedCount,
+          affectedColumns = delta$affectedColumns
+        )
+        rm("last_delta_update", envir = .GlobalEnv)
+        return(result)
+      }
       hotwidget(data = data)
     })
-    edit_batch <- reactiveVal(NULL)
+    edit_batch <- reactiveVal(list()) 
     edit_timer <- reactiveVal(NULL)
 
     shiny::observeEvent(input$table_edit, {
@@ -163,7 +190,13 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
         return()
       }
 
-      edit_batch(edit)
+      current_batch <- edit_batch()
+      if (!is.list(current_batch) || length(current_batch) == 0) {
+        current_batch <- list()
+      }
+      batch_key <- paste0(edit$row, "_", edit$col)
+      current_batch[[batch_key]] <- edit
+      edit_batch(current_batch)
 
       if (!is.null(edit_timer())) {
         timer_id <- edit_timer()
@@ -183,42 +216,82 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     })
 
     shiny::observeEvent(input$`_raf_trigger`, {
-      edit <- edit_batch()
+      batch <- edit_batch()
 
-      if (is.null(edit)) return()
+      if (is.null(batch) || length(batch) == 0) return()
 
       tryCatch({
         schema_config <- get_golem_config("schema")
-        col_editable <- isTRUE(schema_config[[edit$col]]$editable %||% TRUE)
-        if (!col_editable) {
-          stop(sprintf("Column '%s' is not editable. Changes cannot be saved.", edit$col))
-        }    
-        r_row <- edit$row + 1
-
-        store_reactive()$update_cell(
-          row = r_row,
-          col = edit$col,
-          value = edit$value
+        updated_cells <- list()
+        affected_columns <- character()
+        for (batch_key in names(batch)) {
+          edit <- batch[[batch_key]]
+          col_editable <- isTRUE(schema_config[[edit$col]]$editable %||% TRUE)
+          if (!col_editable) {
+            awn::notify(
+              sprintf("Column '%s' is not editable. Changes cannot be saved.", edit$col),
+              type = "alert"
+            )
+            next
+          }
+          
+          r_row <- edit$row + 1
+          store_reactive()$update_cell(
+            row = r_row,
+            col = edit$col,
+            value = edit$value
+          )
+          updated_cells[[length(updated_cells) + 1]] <- list(
+            row = r_row,
+            col = edit$col,
+            value = edit$value
+          )
+          affected_columns <- c(affected_columns, edit$col)
+          message("Cell updated: Row ", r_row, ", Col '", edit$col, "', Value: ", edit$value)
+        }
+        delta_update <- list(
+          type = "delta",
+          updatedCells = updated_cells,
+          modifiedCount = store_reactive()$get_modified_count(),
+          affectedColumns = unique(affected_columns)
         )
-
+        .GlobalEnv$last_delta_update <- delta_update
+        unique_affected <- unique(affected_columns)
+        affected_summary_outputs <- character()
+        for (col in unique_affected) {
+          if (col %in% names(column_summary_dependencies)) {
+            affected_summary_outputs <- c(
+              affected_summary_outputs,
+              column_summary_dependencies[[col]]
+            )
+          } else {
+            affected_summary_outputs <- c(affected_summary_outputs, "summary_rows")
+          }
+        }
+        affected_summary_outputs <- unique(affected_summary_outputs)
+        if ("summary_rows" %in% affected_summary_outputs || "summary_cols" %in% affected_summary_outputs) {
+          row_count_trigger(row_count_trigger() + 1)
+        }
+        if ("summary_age" %in% affected_summary_outputs) {
+          age_trigger(age_trigger() + 1)
+        }
+        if ("summary_bmibl" %in% affected_summary_outputs) {
+          bmibl_trigger(bmibl_trigger() + 1)
+        }
+        modified_trigger(modified_trigger() + 1)
         store_trigger(store_trigger() + 1)
-
         shinyjs::enable("save")
         shinyjs::enable("revert")
-
-        message("Cell updated: Row ", r_row, ", Col '", edit$col, "', Value: ", edit$value)
-
       }, error = function(e) {
         error_msg <- conditionMessage(e)
         clean_msg <- clean_error_message(error_msg)
         awn::notify(
-          paste("Update failed:", clean_error_message(error_msg)),
+          paste("Update failed:", clean_msg),
           type = "alert"
         )
-
         store_trigger(store_trigger() + 1)
       })
-      edit_batch(NULL)
+      edit_batch(list())
       edit_timer(NULL)
     })
 
@@ -255,6 +328,10 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       tryCatch({
         store_reactive()$save()
 
+        row_count_trigger(row_count_trigger() + 1)
+        age_trigger(age_trigger() + 1)
+        bmibl_trigger(bmibl_trigger() + 1)
+        modified_trigger(modified_trigger() + 1)
         store_trigger(store_trigger() + 1)
 
         shinyjs::disable("save")
@@ -282,6 +359,10 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       tryCatch({
         store_reactive()$revert()
 
+        row_count_trigger(row_count_trigger() + 1)
+        age_trigger(age_trigger() + 1)
+        bmibl_trigger(bmibl_trigger() + 1)
+        modified_trigger(modified_trigger() + 1) 
         store_trigger(store_trigger() + 1)
 
         shinyjs::disable("save")
@@ -302,21 +383,21 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     })
 
     output$summary_rows <- renderText({
-      store_trigger()
+      row_count_trigger()
       store <- store_reactive()
       summary <- store$summary()
       as.character(summary$rows)
     })
 
     output$summary_cols <- renderText({
-      store_trigger()
+      row_count_trigger()
       store <- store_reactive()
       summary <- store$summary()
       as.character(summary$cols)
     })
 
     output$summary_age <- renderText({
-      store_trigger()
+      age_trigger()
       store <- store_reactive()
       summary <- store$summary()
       if (!is.null(summary$numeric_means) && "AGE" %in% names(summary$numeric_means)) {
@@ -327,7 +408,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     })
 
     output$summary_bmibl <- renderText({
-      store_trigger()
+      bmibl_trigger()
       store <- store_reactive()
       summary <- store$summary()
       if (!is.null(summary$numeric_means) && "BMIBL" %in% names(summary$numeric_means)) {
@@ -338,7 +419,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     })
 
     output$summary_modified <- renderText({
-      store_trigger()
+      modified_trigger()
       store <- store_reactive()
       as.character(store$get_modified_count())
     })
