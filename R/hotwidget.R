@@ -104,7 +104,7 @@ hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = 
     colHeaders = as.list(names(data)),
     colTypes = as.list(sapply(data, function(col) class(col)[1], USE.NAMES = FALSE)),
     colWidths = unname(col_widths),
-    editableCols = editable_cols,
+    editableCols = as.list(editable_cols),
     stretchH = "all",
     autoRowSize = FALSE,
     rowHeights = 30
