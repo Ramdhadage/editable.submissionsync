@@ -3,15 +3,21 @@
 #' @description
 #' Custom htmlwidget wrapping Handsontable library for editable data tables.
 #' Implements bidirectional R ↔ JS communication with single-cell edit validation.
+#' delta updates for fast incremental cell rendering.
 #'
 #' @details
 #' This widget is designed for production Shiny applications requiring:
 #' - Deterministic single-cell edits (no batch operations)
 #' - Type validation in both JS and R layers
 #' - Controlled reactivity through explicit state management
+#' - Delta updates for fast incremental rendering
 #' - Clean separation between UI (Handsontable) and state (R6)
 #'
 #' @param data Data frame to display and edit. Required.
+#' @param type Character. Either "full" (default) or "delta" for incremental update.
+#' @param updatedCells List of updated cells for delta update.
+#' @param modifiedCount Integer. Number of modified cells.
+#' @param affectedColumns Character vector. Columns affected by update.
 #' @param width Widget width (CSS unit or NULL for auto)
 #' @param height Widget height (CSS unit or NULL for auto)
 #' @param elementId Explicit element ID for Shiny input binding (auto-generated if NULL)
@@ -34,16 +40,22 @@
 #' # Standalone usage
 #' hotwidget(data = mtcars)
 #'
-#' # In Shiny
+#' # In Shiny with delta update
 #' output$table <- renderHotwidget({
-#'   hotwidget(data = store$data)
+#'   hotwidget(
+#'     data = store$data,
+#'     type = "delta",
+#'     updatedCells = list(list(row=1, col="mpg", value=22.5)),
+#'     affectedColumns = "mpg"
+#'   )
 #' })
 #' }
 #'
 #' @import htmlwidgets
 #' @export
-hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL, 
-                      editable_cols = NULL) {
+hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = NULL,
+                      affectedColumns = NULL, width = NULL, height = NULL, 
+                      elementId = NULL, editable_cols = NULL) {
 
   if (missing(data) || is.null(data)) {
     stop("'data' parameter is required")
@@ -85,6 +97,10 @@ hotwidget <- function(data, width = NULL, height = NULL, elementId = NULL,
 
   x = list(
     data = data,
+    type = type,
+    updatedCells = updatedCells,
+    modifiedCount = modifiedCount,
+    affectedColumns = affectedColumns,
     colHeaders = as.list(names(data)),
     colTypes = as.list(sapply(data, function(col) class(col)[1], USE.NAMES = FALSE)),
     colWidths = unname(col_widths),
