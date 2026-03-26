@@ -1,19 +1,7 @@
-# ==============================================================================
-# editable.submissionsync App Configuration
-# ==============================================================================
-#
-# Switch configurations using: Sys.setenv(GOLEM_CONFIG_ACTIVE = "name")
-# Example: Sys.setenv(GOLEM_CONFIG_ACTIVE = "adsl")
-#
-# ==============================================================================
-
-# DEFAULT CONFIGURATION (mtcars dataset)
-# ==============================================================================
 default:
   golem_name: editable
   golem_version: 0.1.0
   app_prod: no
-
   database:
     name: "adsl"
     path: "extdata"
@@ -40,7 +28,6 @@ default:
         type: "character"
         editable: false
 
-      # Treatment Variables
       ARM:
         type: "factor"
 
@@ -56,7 +43,6 @@ default:
       TRT01AN:
         type: "numeric"
 
-      # Treatment Dates
       TRTSDT:
         type: "Date"
 
@@ -72,7 +58,6 @@ default:
       CUMDOSE:
         type: "numeric"
 
-      # Demographics
       AGE:
         type: "numeric"
 
@@ -125,7 +110,6 @@ default:
       DTHFL:
         type: "factor"
 
-      # Baseline Measurements
       BMIBL:
         type: "numeric"
 
@@ -141,7 +125,6 @@ default:
       EDUCLVL:
         type: "numeric"
 
-      # Disease Information
       DISONSDT:
         type: "Date"
 
@@ -151,7 +134,6 @@ default:
       DURDSGR1:
         type: "factor"
 
-      # Study Dates
       VISIT1DT:
         type: "Date"
 
@@ -167,270 +149,11 @@ default:
       RFENDT:
         type: "Date"
 
-      # Discontinuation
       DCDECOD:
         type: "factor"
 
       DCREASCD:
         type: "factor"
-      # Efficacy Measures
+
       MMSETOT:
         type: "numeric"
-  # database:
-  #   name: "mtcars"
-  #   path: "extdata"
-  #   table: null
-  #   id_column: "MODEL"
-  # schema:
-  #     MODEL:
-  #       type: "character"
-  #       editable: false
-  #
-  #     mpg:
-  #       type: "numeric"
-  #
-  #     cyl:
-  #       type: "factor"
-  #
-  #     disp:
-  #       type: "numeric"
-  #
-  #     hp:
-  #       type: "numeric"
-  #
-  #     drat:
-  #       type: "numeric"
-  #
-  #     wt:
-  #       type: "numeric"
-  #
-  #     qsec:
-  #       type: "numeric"
-  #
-  #     vs:
-  #       type: "factor"
-  #
-  #     am:
-  #       type: "logical"
-  #
-  #     gear:
-  #       type: "factor"
-  #
-  #     carb:
-  #       type: "factor"
-
-# PRODUCTION CONFIGURATION (for deployment)
-# ==============================================================================
-production:
-  golem_name: editable
-  golem_version: 0.1.0
-  app_prod: yes
-
-  database:
-    name: "adsl"
-    path: "extdata"
-    table: null
-    id_column: "USUBJID"
-  schema:
-      STUDYID:
-        type: "character"
-        editable: false
-
-      USUBJID:
-        type: "character"
-        editable: false
-
-      SUBJID:
-        type: "character"
-        editable: false
-
-      SITEID:
-        type: "character"
-        editable: false
-
-      SITEGR1:
-        type: "character"
-        editable: false
-
-      # Treatment Variables
-      ARM:
-        type: "factor"
-
-      TRT01P:
-        type: "factor"
-
-      TRT01PN:
-        type: "numeric"
-
-      TRT01A:
-        type: "factor"
-
-      TRT01AN:
-        type: "numeric"
-
-      # Treatment Dates
-      TRTSDT:
-        type: "Date"
-
-      TRTEDT:
-        type: "Date"
-
-      TRTDUR:
-        type: "numeric"
-
-      AVGDD:
-        type: "numeric"
-
-      CUMDOSE:
-        type: "numeric"
-
-      # Demographics
-      AGE:
-        type: "numeric"
-
-      AGEGR1:
-        type: "factor"
-
-      AGEGR1N:
-        type: "numeric"
-
-      AGEU:
-        type: "factor"
-        editable: false
-
-      RACE:
-        type: "factor"
-
-      RACEN:
-        type: "numeric"
-
-      SEX:
-        type: "factor"
-        editable: false
-
-      ETHNIC:
-        type: "factor"
-
-      # Population Flags
-      SAFFL:
-        type: "factor"
-
-      ITTFL:
-        type: "factor"
-
-      EFFFL:
-        type: "factor"
-
-      COMP8FL:
-        type: "factor"
-
-      COMP16FL:
-        type: "factor"
-
-      COMP24FL:
-        type: "factor"
-
-      DISCONFL:
-        type: "factor"
-
-      DSRAEFL:
-        type: "factor"
-
-      DTHFL:
-        type: "factor"
-
-      # Baseline Measurements
-      BMIBL:
-        type: "numeric"
-
-      BMIBLGR1:
-        type: "factor"
-
-      HEIGHTBL:
-        type: "numeric"
-
-      WEIGHTBL:
-        type: "numeric"
-
-      EDUCLVL:
-        type: "numeric"
-
-      # Disease Information
-      DISONSDT:
-        type: "Date"
-
-      DURDIS:
-        type: "numeric"
-
-      DURDSGR1:
-        type: "factor"
-
-      # Study Dates
-      VISIT1DT:
-        type: "Date"
-
-      RFSTDTC:
-        type: "character"
-
-      RFENDTC:
-        type: "character"
-
-      VISNUMEN:
-        type: "numeric"
-
-      RFENDT:
-        type: "Date"
-
-      # Discontinuation
-      DCDECOD:
-        type: "factor"
-
-      DCREASCD:
-        type: "factor"
-      # Efficacy Measures
-      MMSETOT:
-        type: "numeric"
-
-  # database:
-  #   name: "mtcars"
-  #   path: "extdata"
-  #   table: null
-  #   id_column: "MODEL"
-  # schema:
-  #     MODEL:
-  #       type: "character"
-  #       editable: false
-  #
-  #     mpg:
-  #       type: "numeric"
-  #
-  #     cyl:
-  #       type: "factor"
-  #
-  #     disp:
-  #       type: "numeric"
-  #
-  #     hp:
-  #       type: "numeric"
-  #
-  #     drat:
-  #       type: "numeric"
-  #
-  #     wt:
-  #       type: "numeric"
-  #
-  #     qsec:
-  #       type: "numeric"
-  #
-  #     vs:
-  #       type: "factor"
-  #
-  #     am:
-  #       type: "logical"
-  #
-  #     gear:
-  #       type: "factor"
-  #
-  #     carb:
-  #       type: "factor"
-
