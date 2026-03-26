@@ -156,17 +156,14 @@ DataStore <- R6::R6Class(
         }
 
         summary_list <- list(
-          message = sprintf("Rows: %d | Columns: %d", 
-                           private$.column_cache$row_count, 
+          message = sprintf("Rows: %d | Columns: %d",
+                           private$.column_cache$row_count,
                            private$.column_cache$col_count),
           rows = private$.column_cache$row_count,
           cols = private$.column_cache$col_count,
           numeric_means = numeric_means
         )
-
         private$.summary_cache <<- summary_list
-
-        cli::cli_inform("Summary generated for {nrow(self$data)} x {ncol(self$data)} dataset (Phase 3: Column cache)")
         summary_list
       }, error = function(e) {
         cli::cli_abort(c(
@@ -215,7 +212,7 @@ DataStore <- R6::R6Class(
       self$data[row, col_name] <- coerced_value
 
       private$modified_cells <- private$modified_cells + 1
-      private$.summary_cache <- NULL  
+      private$.summary_cache <- NULL
       cache_key <- paste0(col_name, "_mean")
       private$.column_cache[[cache_key]] <- NULL
       if (col_name %in% c("SUBJID", "SITEID")) {
@@ -277,7 +274,7 @@ DataStore <- R6::R6Class(
     db_path = NULL,
     modified_cells = 0,
     .summary_cache = NULL,
-    .column_cache = list(),  
+    .column_cache = list(),
     finalize = function() {
       # Disconnect from DuckDB
       if (!is.null(self$con)) {
