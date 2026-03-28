@@ -1,4 +1,4 @@
-Package: editable.submissionsync
+﻿Package: editable.submissionsync
 Title: Interactive Excel-Style Data Editor
 Version: 0.1.0
 Authors@R: 
@@ -19,7 +19,8 @@ Imports:
     R6,
     rlang,
     shiny,
-    shinyjs
+    shinyjs,
+    shinycssloaders
 Suggests:
     pkgload, 
     here,
