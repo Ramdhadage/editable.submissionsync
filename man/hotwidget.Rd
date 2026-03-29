@@ -6,6 +6,10 @@
 \usage{
 hotwidget(
   data,
+  type = "full",
+  updatedCells = NULL,
+  modifiedCount = NULL,
+  affectedColumns = NULL,
   width = NULL,
   height = NULL,
   elementId = NULL,
@@ -14,6 +18,14 @@ hotwidget(
 }
 \arguments{
 \item{data}{Data frame to display and edit. Required.}
+
+\item{type}{Character. Either "full" (default) or "delta" for incremental update.}
+
+\item{updatedCells}{List of updated cells for delta update.}
+
+\item{modifiedCount}{Integer. Number of modified cells.}
+
+\item{affectedColumns}{Character vector. Columns affected by update.}
 
 \item{width}{Widget width (CSS unit or NULL for auto)}
 
@@ -27,6 +39,7 @@ htmlwidget object
 \description{
 Custom htmlwidget wrapping Handsontable library for editable data tables.
 Implements bidirectional R ↔ JS communication with single-cell edit validation.
+delta updates for fast incremental cell rendering.
 }
 \details{
 This widget is designed for production Shiny applications requiring:
@@ -34,6 +47,7 @@ This widget is designed for production Shiny applications requiring:
 \item Deterministic single-cell edits (no batch operations)
 \item Type validation in both JS and R layers
 \item Controlled reactivity through explicit state management
+\item Delta updates for fast incremental rendering
 \item Clean separation between UI (Handsontable) and state (R6)
 }
 }
@@ -55,9 +69,14 @@ The widget sends edit events to Shiny via \verb{input$<id>_edit}:
 # Standalone usage
 hotwidget(data = mtcars)
 
-# In Shiny
+# In Shiny with delta update
 output$table <- renderHotwidget({
-  hotwidget(data = store$data)
+  hotwidget(
+    data = store$data,
+    type = "delta",
+    updatedCells = list(list(row=1, col="mpg", value=22.5)),
+    affectedColumns = "mpg"
+  )
 })
 }
 
