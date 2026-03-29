@@ -19,8 +19,6 @@ app_ui <- function(request) {
 
         strong(h1("ADaM ADSL Dataset")),
         p("Interactive data table with real-time editing"),
-        skeleton_replacement_script("table"),
-        skeleton_content("table"),
         mod_table_ui("table")
       ),
 

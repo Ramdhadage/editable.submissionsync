@@ -7,7 +7,7 @@
 #' @param id Character string. Module namespace ID.
 #'
 #' @return tagList of UI components
-#'
+#' @import shinycssloaders golem
 #' @examples
 #' \dontrun{
 #' mod_table_ui("table")
@@ -45,7 +45,11 @@ mod_table_ui <- function(id) {
         bslib::card_body(
           div(
             class = "hotwidget-container",
-            hotwidgetOutput(ns("table"), height = "500px")
+            shinycssloaders::withSpinner(
+              hotwidgetOutput(ns("table"), height = "500px"),
+              image = "https://github.com/Ramdhadage/editable.submissionsync/blob/main/inst/app/www/custom.gif?raw=true",
+              type = "custom"
+            )
           )
         )
       ),
