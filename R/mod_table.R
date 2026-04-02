@@ -45,10 +45,9 @@ mod_table_ui <- function(id) {
         bslib::card_body(
           div(
             class = "hotwidget-container",
-            shinycssloaders::withSpinner(
+            withCustomSpinner(
               hotwidgetOutput(ns("table"), height = "500px"),
-              image = "https://github.com/Ramdhadage/editable.submissionsync/blob/main/inst/app/www/custom.gif?raw=true",
-              type = "custom"
+              min_height = "520px"
             )
           )
         )
@@ -61,7 +60,13 @@ mod_table_ui <- function(id) {
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Records"),
-            div(class = "summary-metric-value", textOutput(ns("summary_rows"), inline = TRUE))
+            div(
+              class = "summary-metric-value",
+              withCustomSpinner(
+                textOutput(ns("summary_rows"), inline = TRUE),
+                min_height = "50px"
+              )
+            )
           ),
 
           div(

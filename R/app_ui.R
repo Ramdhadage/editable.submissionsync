@@ -6,6 +6,21 @@
 #' @noRd
 app_ui <- function(request) {
   tagList(
+    shinyjs::useShinyjs(),
+    div(
+      id = "page-loading-spinner",
+      class = "page-loading-overlay",
+      div(
+        class = "page-loading-container",
+        img(
+          src = "https://github.com/Ramdhadage/editable.submissionsync/blob/main/inst/app/www/custom.gif?raw=true",
+          alt = "Loading...",
+          class = "page-loading-gif"
+        ),
+        p("Loading application...", class = "page-loading-text")
+      )
+    ),
+
     bslib::page_navbar(
       title = "Data Explorer",
       id = "navbar",

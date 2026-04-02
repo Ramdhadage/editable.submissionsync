@@ -739,3 +739,26 @@ get_cached_store <- function() {
   }
   .cache_env$.store
 }
+#' Wrap output with professional custom spinner
+#' @description
+#' Internal helper that wraps Shiny outputs with custom GIF spinner.
+#' Ensures centered, responsive spinner that survives font size changes.
+#'
+#' @param ui_element The Shiny UI output to wrap (e.g., hotwidgetOutput()).
+#' @param min_height Minimum height in pixels when loading. Default "200px".
+#'
+#' @return Wrapped UI element with spinner container.
+#' @keywords internal
+withCustomSpinner <- function(ui_element, min_height = "200px") {
+  spinner_url <- "https://github.com/Ramdhadage/editable.submissionsync/blob/main/inst/app/www/custom.gif?raw=true"
+  
+  div(
+    class = "custom-spinner-container",
+    style = sprintf("min-height: %s;", min_height),
+    shinycssloaders::withSpinner(
+      ui_element,
+      image = spinner_url,
+      type = "custom"
+    )
+  )
+}
