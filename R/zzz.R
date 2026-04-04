@@ -21,8 +21,8 @@ NULL
   # Initialize DuckDB schema (idempotent)
   tryCatch({
     db_config <- get_golem_config("database")
-    db_path <- system.file("extdata", db_config$name, package = pkgname)
-    
+    db_path <- system.file("extdata", paste0(db_config$name, ".duckdb"), package = pkgname)
+
     if (file.exists(db_path)) {
       con <- DBI::dbConnect(duckdb::duckdb(), db_path)
       source(system.file("app/db_init.R", package = pkgname), local = TRUE)
