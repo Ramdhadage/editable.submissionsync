@@ -30,37 +30,37 @@ if (!"users" %in% tables) {
 }
 
 # Clear existing test users (if re-running)
-DBI::dbExecute(con, "DELETE FROM users WHERE username IN ('alice', 'bob')")
+DBI::dbExecute(con, "DELETE FROM users WHERE username IN ('editor', 'reviewer')")
 
 # Insert test users
 # Note: In production, use strong passwords and secure hashing (bcrypt already used)
 
-# User 1: Alice (Editor)
-alice_hash <- bcrypt::hashpw("editor123")
+# User 1: editor (Editor)
+editor_hash <- bcrypt::hashpw("123")
 DBI::dbExecute(con,
   "INSERT INTO users (username, password_hash, role, email, is_active)
    VALUES (?, ?, ?, ?, 1)",
-  params = list("alice", alice_hash, "Editor", "alice@company.com")
+  params = list("editor", editor_hash, "Editor", "editor@company.com")
 )
-cat("✓ Created user: alice (Editor)\n")
+cat("✓ Created user: editor (Editor)\n")
 
-# User 2: Bob (Reviewer)
-bob_hash <- bcrypt::hashpw("reviewer123")
+# User 2: reviewer (Reviewer)
+reviewer_hash <- bcrypt::hashpw("123")
 DBI::dbExecute(con,
   "INSERT INTO users (username, password_hash, role, email, is_active)
    VALUES (?, ?, ?, ?, 1)",
-  params = list("bob", bob_hash, "Reviewer", "bob@company.com")
+  params = list("reviewer", reviewer_hash, "Reviewer", "reviewer@company.com")
 )
-cat("✓ Created user: bob (Reviewer)\n")
+cat("✓ Created user: reviewer (Reviewer)\n")
 
-# User 3: Carol (Admin, can do both)
-carol_hash <- bcrypt::hashpw("admin123")
+# User 3: admin (Admin, can do both)
+admin_hash <- bcrypt::hashpw("123")
 DBI::dbExecute(con,
   "INSERT INTO users (username, password_hash, role, email, is_active)
    VALUES (?, ?, ?, ?, 1)",
-  params = list("carol", carol_hash, "Admin", "carol@company.com")
+  params = list("admin", admin_hash, "Admin", "admin@company.com")
 )
-cat("✓ Created user: carol (Admin)\n")
+cat("✓ Created user: admin (Admin)\n")
 
 # Verify
 users <- DBI::dbGetQuery(con, "SELECT id, username, role, is_active FROM users ORDER BY id")
@@ -70,4 +70,4 @@ print(users)
 # Close connection
 DBI::dbDisconnect(con)
 cat("\n✅ Test users seeded successfully\n")
-cat("   Login as alice/editor123 (Editor) or bob/reviewer123 (Reviewer)\n")
+cat("   Login as editor/123 (Editor) or reviewer/123 (Reviewer)\n")
