@@ -64,15 +64,14 @@ mod_review_ui <- function(id) {
 mod_review_server <- function(id, con, user_id, user_role, submission_service) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
     # Pre-flight: Verify user is Reviewer
-    observeEvent(once = TRUE, {
+    observeEvent(user_role(), {
       tryCatch({
         access_control$enforce_action(user_role(), "review")
       }, error = function(e) {
         cli::cli_abort("User does not have reviewer permission")
       })
-    })
+    }, once = TRUE)
 
     # ===== 1. LIST PENDING SUBMISSIONS =====
     pending_submissions <- reactive({
