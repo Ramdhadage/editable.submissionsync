@@ -180,14 +180,15 @@ DataStore <- R6::R6Class(
     #' @param row Integer row index (1-based)
     #' @param col Column name (character) or index (integer)
     #' @param value New value to assign (will be coerced to match column type)
+    #' @param user_id Integer. User ID performing edit (optional, for audit trail).
     #'
     #' @return Invisible TRUE on success, throws cli_abort on validation failure
     #' @examples
     #' \dontrun{
     #' store$update_cell(1, "mpg", 22.5)
-    #' store$update_cell(2, 4, 120)  # Using column index
+    #' store$update_cell(2, 4, 120, user_id = 1)  # With audit logging
     #' }
-    update_cell = function(row, col, value) {
+    update_cell = function(row, col, value, user_id = NA) {
       validate_data(self$data)
 
       validate_row(row, self$data)
@@ -209,7 +210,15 @@ DataStore <- R6::R6Class(
 
       validate_no_na_loss(coerced_value, value, col_name)
 
+      # Store old value for audit trail
+      old_value <- self$data[row, col_name]
+
       self$data[row, col_name] <- coerced_value
+
+      # Log audit event if user_id provided
+      if (!is.na(user_id) && !is.null(audit_service)) {
+        audit_service$log_edit(user_id, row, col_name, old_value, coerced_value)
+      }
 
       private$modified_cells <- private$modified_cells + 1
       private$.summary_cache <- NULL

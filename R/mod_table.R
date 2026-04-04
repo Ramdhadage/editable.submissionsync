@@ -33,7 +33,21 @@ mod_table_ui <- function(id) {
         "Revert Changes",
         icon = icon("undo"),
         class = "btn btn-outline-danger"
+      ),
+      actionButton(
+        ns("submit"),
+        "Submit for Review",
+        icon = icon("paper-plane"),
+        class = "btn btn-success",
+        style = "margin-left: 1rem;"
       )
+    ),
+
+    # NEW: Status display
+    div(
+      class = "alert alert-info",
+      id = ns("status_panel"),
+      textOutput(ns("submission_status"))
     ),
 
     bslib::layout_columns(
@@ -113,19 +127,12 @@ mod_table_ui <- function(id) {
 #'   Pattern: store_reactive <- reactiveVal(DataStore$new())
 #' @param store_trigger Reactive value used to force invalidation.
 #'   Pattern: store_trigger <- reactiveVal(0)
+#' @param user_id Reactive. Current user ID (from authentication).
+#' @param user_role Reactive. Current user role (Editor, Reviewer, Admin).
+#' @param submission_service SubmissionService R6 object (for workflow).
+#' @param con Reactive. DBI connection to adsl.duckdb.
 #'
 #' @return Module server function (for testServer compatibility)
-#'
-#' @section Reactivity Pattern:
-#' This module uses explicit invalidation via reactiveVal():
-#' ```r
-#' # Reading: triggers reactive dependency
-#' current_store <- store_reactive()
-#'
-#' # Writing: triggers invalidation
-#' store_reactive()$update_cell(row, col, value)
-#' store_trigger(store_trigger() + 1)  # Force invalidation
-#' ```
 #'
 #' @examples
 #' \dontrun{
@@ -133,11 +140,15 @@ mod_table_ui <- function(id) {
 #' store <- DataStore$new()
 #' store_reactive <- reactiveVal(store)
 #' store_trigger <- reactiveVal(0)
-#' mod_table_server("table", store_reactive, store_trigger)
+#' mod_table_server("table", store_reactive, store_trigger,
+#'                  user_id = reactive(1), user_role = reactive("Editor"),
+#'                  submission_service = ss, con = reactive(con_obj))
 #' }
 #'
 #' @export
-mod_table_server <- function(id, store_reactive, store_trigger) {
+mod_table_server <- function(id, store_reactive, store_trigger,
+                             user_id = NULL, user_role = NULL,
+                             submission_service = NULL, con = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
 
     shinyjs::disable("save")
@@ -148,10 +159,10 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       SUBJID = c("summary_rows"),
       SITEID = c("summary_rows")
     )
-    row_count_trigger <- reactiveVal(0)     
-    age_trigger <- reactiveVal(0)            
-    bmibl_trigger <- reactiveVal(0)       
-    modified_trigger <- reactiveVal(0)   
+    row_count_trigger <- reactiveVal(0)
+    age_trigger <- reactiveVal(0)
+    bmibl_trigger <- reactiveVal(0)
+    modified_trigger <- reactiveVal(0)
 
     table_data <- shiny::reactive({
       store_trigger()
@@ -174,7 +185,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       } else {
         NULL
       }
-      
+
       if (!is.null(delta)) {
         result <- hotwidget(
           data = data,
@@ -188,7 +199,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       }
       hotwidget(data = data)
     })
-    edit_batch <- reactiveVal(list()) 
+    edit_batch <- reactiveVal(list())
     edit_timer <- reactiveVal(NULL)
 
     shiny::observeEvent(input$table_edit, {
@@ -243,12 +254,16 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
             )
             next
           }
-          
+
           r_row <- edit$row + 1
+
+          # Pass user_id to update_cell for audit logging
+          user_id_val <- if (!is.null(user_id)) user_id() else NA
           store_reactive()$update_cell(
             row = r_row,
             col = edit$col,
-            value = edit$value
+            value = edit$value,
+            user_id = user_id_val
           )
           updated_cells[[length(updated_cells) + 1]] <- list(
             row = r_row,
@@ -371,7 +386,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
         row_count_trigger(row_count_trigger() + 1)
         age_trigger(age_trigger() + 1)
         bmibl_trigger(bmibl_trigger() + 1)
-        modified_trigger(modified_trigger() + 1) 
+        modified_trigger(modified_trigger() + 1)
         store_trigger(store_trigger() + 1)
 
         shinyjs::disable("save")
@@ -386,8 +401,137 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
         error_msg <- conditionMessage(e)
         clean_msg <- clean_error_message(error_msg)
         awn::notify(
-          paste("Revert failed:", conditionMessage(e)),
+          paste("Revert failed:", clean_msg),
           type = "error")
+      })
+    })
+
+    # ===== NEW: SUBMISSION WORKFLOW =====
+
+    # Track current submission status
+    current_submission_status <- shiny::reactive({
+      if (is.null(user_id) || is.null(submission_service)) {
+        return(list(id = NA, status = "NO_AUTH"))
+      }
+
+      tryCatch({
+        submission_service$get_latest_submission(user_id())
+      }, error = function(e) {
+        list(id = NA, status = "ERROR")
+      })
+    })
+
+    # Update UI based on submission status (disable edits if PENDING)
+    shiny::observe({
+      status <- current_submission_status()$status
+
+      if (status == "PENDING") {
+        shinyjs::disable("submit")
+        shinyjs::disable("save")
+        shinyjs::disable("revert")
+      } else if (status == "APPROVED") {
+        shinyjs::disable("submit")
+        shinyjs::disable("save")
+        shinyjs::disable("revert")
+      } else if (status == "REJECTED") {
+        shinyjs::enable("submit")
+        shinyjs::enable("save")
+      } else {
+        shinyjs::enable("submit")
+      }
+    })
+
+    # Display submission status
+    output$submission_status <- renderText({
+      status <- current_submission_status()
+
+      if (is.na(status$id)) {
+        switch(status$status,
+          "NO_AUTH" = "Not authenticated. Cannot submit.",
+          "NO_SUBMISSION" = "No submissions yet. Edit and submit.",
+          "ERROR" = "Error checking submission status.",
+          "Status unavailable"
+        )
+      } else {
+        switch(status$status,
+          "DRAFT" = sprintf("Draft saved (ID: %d). Save and submit when ready.", status$id),
+          "PENDING" = sprintf("⏳ Awaiting reviewer approval (ID: %d). Editing disabled.", status$id),
+          "APPROVED" = sprintf("✅ Approved (ID: %d). Create new submission to edit.", status$id),
+          "REJECTED" = sprintf("❌ Rejected (ID: %d). You can re-edit and resubmit.", status$id),
+          "Unknown status"
+        )
+      }
+    })
+
+    # Submit button handler
+    shiny::observeEvent(input$submit, {
+      status <- current_submission_status()
+
+      tryCatch({
+        # Enforce permission
+        if (!is.null(user_role)) {
+          access_control$enforce_action(user_role(), "submit")
+        }
+
+        # Show confirmation modal
+        shiny::showModal(
+          shiny::modalDialog(
+            title = "Submit Edits for Review",
+            shiny::p("Your edits will be sent to a reviewer for approval."),
+            shiny::p(shiny::strong("After submission:"),
+              " You cannot edit until the reviewer approves or rejects."),
+            shiny::p(sprintf("Modified cells: %d", store_reactive()$get_modified_count())),
+            footer = shiny::tagList(
+              shiny::modalButton("Cancel"),
+              shiny::actionButton(
+                session$ns("confirm_submit"),
+                "Yes, Submit",
+                class = "btn btn-success"
+              )
+            ),
+            easyClose = FALSE
+          )
+        )
+      }, error = function(e) {
+        awn::notify(clean_error_message(conditionMessage(e)), type = "alert")
+      })
+    })
+
+    # Confirm submit handler
+    shiny::observeEvent(input$confirm_submit, {
+      tryCatch({
+        if (is.null(user_id) || is.null(submission_service) || is.null(con)) {
+          stop("User context or services not available")
+        }
+
+        # Get current data
+        current_data <- store_reactive()$data
+
+        # Create submission (DRAFT state)
+        submission_id <- submission_service$create_submission(
+          user_id = user_id(),
+          user_role = user_role(),
+          data_snapshot = current_data
+        )
+
+        # Transition to PENDING
+        submission_service$submit_for_review(
+          user_id = user_id(),
+          user_role = user_role(),
+          submission_id = submission_id
+        )
+
+        # Invalidate UI
+        store_trigger(store_trigger() + 1)
+        shiny::removeModal()
+
+        awn::notify(
+          sprintf("Submitted! Submission ID: %d", submission_id),
+          type = "success"
+        )
+      }, error = function(e) {
+        shiny::removeModal()
+        awn::notify(clean_error_message(conditionMessage(e)), type = "alert")
       })
     })
 

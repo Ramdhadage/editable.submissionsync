@@ -7,6 +7,7 @@ Description: A lightweight table viewer package.
 License: MIT + file LICENSE
 Imports: 
     awn,
+    bcrypt,
     bslib,
     checkmate,
     cli,
@@ -15,12 +16,14 @@ Imports:
     duckdb,
     golem,
     htmlwidgets,
+    jsonlite,
     methods,
     R6,
     rlang,
     shiny,
     shinycssloaders,
-    shinyjs
+    shinyjs,
+    shinymanager
 Suggests:
     pkgload, 
     here,
