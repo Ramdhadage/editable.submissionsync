@@ -1,6 +1,6 @@
-# editable.submissionsync <img src="inst/app/www/favicon.ico" align="right" height="138" />
+# editable.submissionsync <img src="inst/app/www/favicon.png" align="right" height="138" />
 
-> Interactive Excel-Style Data Editor
+> “Audit-Ready Clinical Dataset Review Platform”
 
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- [![R-CMD-check](https://github.com/Ramdhadage/editable.submissionsync/workflows/R-CMD-check/badge.svg)](https://github.com/Ramdhadage/editable.submissionsync/actions) -->
@@ -9,16 +9,21 @@
 
 ## Overview
 
-**editable.submissionsync** is a feature-rich table editing solution for R Shiny that combines the flexibility of Microsoft Excel with real-time updates, change tracking, and database synchronization. Built on a robust architecture using R6 classes, DuckDB, and custom htmlwidgets, it provides enterprise-grade data editing capabilities within your Shiny applications.
+Editable Submission Sync is a Shiny-based application designed to modernize how clinical teams **review, track, and approve dataset changes** during the final stages before regulatory submission.
+It introduces a **structured, audit-ready workflow** to replace fragmented processes involving Excel files, email threads, and manual tracking.
+
 
 ### Key Features
-
 - **📊 Excel-Like Interface** - Familiar spreadsheet experience with HandsOnTable integration
+- **📜 Full Audit Trail** - Automatically logs User, Field changed, Previous value, New value and Timestamp. Also, provides **complete traceability for audits**
+- **🔍 Review & Approval Workflow ** - Role-based system **Editor** → makes changes and **Reviewer** → approves/rejects
+- **🔐 Role-Based Access Control** - Secure login system and  controlled access based on responsibility
 - **💾 Database Persistence** - Seamless DuckDB backend for reliable data storage
 - **🔄 Change Tracking** - Built-in undo/revert functionality for data safety
 - **🧩 Modular Architecture** - Reusable Shiny modules for rapid development
 - **⚡ Real-Time Updates** - Instant UI feedback with reactive state management
 - **🎯 Type Safety** - Column-level validation and type coercion
+- **📊 Dynamic Visualization** - Generate plots (e.g., swimmer plots) and automatically reflect dataset updates
 - **📈 Data Summaries** - Automatic statistical summaries for numeric columns
 - **🏗️ Production-Ready** - Built with Golem framework for scalability
 
@@ -192,27 +197,14 @@ if (result$success) {
 
 ---
 
-## Use Cases
+## 🚀 Value Proposition
 
-### 1. **Data Entry Applications**
-Replace manual data entry with an intuitive spreadsheet interface for data collection and management.
+- ✅ Replace Excel + email-based workflows  
+- ✅ Ensure **audit-ready traceability**  
+- ✅ Reduce errors in final dataset review  
+- ✅ Improve collaboration between editors & reviewers  
+- ✅ Accelerate submission readiness  
 
-### 2. **Database Frontends**
-Provide non-technical users with an Excel-like interface to view and edit database tables.
-
-### 3. **ETL Workflows**
-Enable data cleaning and transformation through an interactive interface before loading into production systems.
-
-### 4. **Collaborative Data Editing**
-Build multi-user applications where teams can edit shared datasets with change tracking.
-
-### 5. **Configuration Management**
-Manage application configurations, lookup tables, and reference data through an editable interface.
-
-### 6. **Financial Modeling**
-Create interactive financial models with spreadsheet-style data input and real-time calculations.
-
----
 
 ## Configuration
 
