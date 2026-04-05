@@ -16,7 +16,7 @@ It introduces a **structured, audit-ready workflow** to replace fragmented proce
 ### Key Features
 - **📊 Excel-Like Interface** - Familiar spreadsheet experience with HandsOnTable integration
 - **📜 Full Audit Trail** - Automatically logs User, Field changed, Previous value, New value and Timestamp. Also, provides **complete traceability for audits**
-- **🔍 Review & Approval Workflow ** - Role-based system **Editor** → makes changes and **Reviewer** → approves/rejects
+- **🔍 Review and Approval Workflow** - Role-based system: **Editor** → makes changes and **Reviewer** → approves/rejects
 - **🔐 Role-Based Access Control** - Secure login system and  controlled access based on responsibility
 - **💾 Database Persistence** - Seamless DuckDB backend for reliable data storage
 - **🔄 Change Tracking** - Built-in undo/revert functionality for data safety
