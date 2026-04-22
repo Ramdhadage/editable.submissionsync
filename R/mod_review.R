@@ -134,7 +134,7 @@ mod_review_server <- function(id, con, user_id, user_role, submission_service) {
 
       tryCatch({
         result <- DBI::dbGetQuery(con(),
-          "SELECT s.id, s.created_by, u.username, s.status, s.submitted_at,
+          "SELECT s.id, s.created_by, u.user, s.status, s.submitted_at,
                   s.review_comment
            FROM submissions s
            LEFT JOIN users u ON s.created_by = u.id
@@ -149,7 +149,7 @@ mod_review_server <- function(id, con, user_id, user_role, submission_service) {
         r <- result[1, ]
         sprintf(
           "ID: %d | Editor: %s | Status: %s | Submitted: %s | Comments: %s",
-          r$id, r$username, r$status, r$submitted_at,
+          r$id, r$user, r$status, r$submitted_at,
           if (is.na(r$review_comment)) "(none)" else r$review_comment
         )
       }, error = function(e) {

@@ -9,11 +9,11 @@
 #' @importFrom golem with_golem_options
 #' @importFrom utils modifyList
 run_app <- function(
-  onStart = NULL,
-  options = list(),
-  enableBookmarking = NULL,
-  uiPattern = "/",
-  ...
+    onStart = NULL,
+    options = list(),
+    enableBookmarking = NULL,
+    uiPattern = "/",
+    ...
 ) {
   apply_shiny_performance_config()
 
@@ -25,7 +25,21 @@ run_app <- function(
 
   with_golem_options(
     app = shinyApp(
-      ui = app_ui,
+      ui = shinymanager::secure_app(
+        ui = app_ui,
+        enable_admin = TRUE,
+        tags_top = tags$div(
+          style = "text-align:center; margin-bottom:20px;",
+          div(img(src = "www/favicon.png", class = "mb-4", style = "max-height: 100px;"), class = "text-center"),
+          tags$h3("Login to editable.submissionsyn", style = "color:#2c3e50; font-weight:700;"),
+          tags$p("Audit-Ready Clinical Dataset Review Platform", style = "color:#7f8c8d;")
+        ),
+        tags_bottom = tags$div(
+          style = "text-align:center; margin-top:20px;
+                   font-size:12px; color:#95a5a6;",
+          tags$p("Contact your administrator if you have trouble signing in.")
+        )
+      ),
       server = app_server,
       onStart = onStart,
       options = merged_options,

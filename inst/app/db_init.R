@@ -11,12 +11,12 @@
 initialize_duckdb_schema <- function(con) {
   tryCatch({
     DBI::dbExecute(con, "CREATE SEQUENCE IF NOT EXISTS seq_users_id START 1")
-    
+
     DBI::dbExecute(con, "
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER DEFAULT nextval('seq_users_id') PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
+        user TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
         role TEXT NOT NULL CHECK(role IN ('Editor', 'Reviewer', 'Admin')),
         email TEXT,
         is_active BOOLEAN DEFAULT 1,
@@ -40,7 +40,7 @@ initialize_duckdb_schema <- function(con) {
     cli::cli_alert_info("Table 'sessions' initialized")
 
     # ===== Table 3: Submissions =====
-    DBI::dbExecute(con, "CREATE SEQUENCE IF NOT EXISTS seq_submissions_id START 1") 
+    DBI::dbExecute(con, "CREATE SEQUENCE IF NOT EXISTS seq_submissions_id START 1")
     DBI::dbExecute(con, "
       CREATE TABLE IF NOT EXISTS submissions (
         id INTEGER DEFAULT nextval('seq_submissions_id') PRIMARY KEY,
@@ -59,7 +59,7 @@ initialize_duckdb_schema <- function(con) {
     cli::cli_alert_info("Table 'submissions' initialized")
 
     # ===== Table 4: Audit Log (IMMUTABLE, APPEND-ONLY) =====
-    DBI::dbExecute(con, "CREATE SEQUENCE IF NOT EXISTS seq_audit_log_id START 1") 
+    DBI::dbExecute(con, "CREATE SEQUENCE IF NOT EXISTS seq_audit_log_id START 1")
     DBI::dbExecute(con, "
       CREATE TABLE IF NOT EXISTS audit_log (
         id INTEGER DEFAULT nextval('seq_audit_log_id') PRIMARY KEY,

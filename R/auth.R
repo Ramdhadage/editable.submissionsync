@@ -1,7 +1,7 @@
 #' User Authentication & Session Management Service
 #'
 #' @description
-#' User management: lookup by ID/username, check active status.
+#' User management: lookup by ID/user, check active status.
 #' Session tracking optional (can use shinymanager's built-in).
 #'
 #' @keywords internal
@@ -36,7 +36,7 @@ UserAuth <- R6::R6Class(
     #' @return Data frame (one row) or NULL if not found.
     get_user = function(user_id) {
       result <- DBI::dbGetQuery(private$con,
-        "SELECT id, username, role, email, is_active FROM users WHERE id = ?",
+        "SELECT id, user, role, email, is_active FROM users WHERE id = ?",
         params = list(user_id)
       )
 
@@ -47,13 +47,13 @@ UserAuth <- R6::R6Class(
       result[1, , drop = FALSE]
     },
 
-    #' @description Get user info by username
-    #' @param username Character. Username.
+    #' @description Get user info by user
+    #' @param user Character. Username.
     #' @return Data frame (one row) or NULL if not found.
-    get_user_by_username = function(username) {
+    get_user_by_username = function(user) {
       result <- DBI::dbGetQuery(private$con,
-        "SELECT id, username, role, email, is_active FROM users WHERE username = ?",
-        params = list(username)
+        "SELECT id, user, role, email, is_active FROM users WHERE user = ?",
+        params = list(user)
       )
 
       if (nrow(result) == 0) {
@@ -83,7 +83,7 @@ UserAuth <- R6::R6Class(
     #' @return Data frame. All active users.
     list_active_users = function() {
       DBI::dbGetQuery(private$con,
-        "SELECT id, username, role, email FROM users WHERE is_active = TRUE ORDER BY username"
+        "SELECT id, user, role, email FROM users WHERE is_active = TRUE ORDER BY user"
       )
     }
   ),

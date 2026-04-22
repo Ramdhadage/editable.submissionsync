@@ -11,27 +11,30 @@
 app_server <- function(input, output, session) {
   # ===== AUTHENTICATION LAYER =====
   is_authenticated <- shiny::reactiveVal(FALSE)
-  
+
   # Load users from database
   db_config <- get_golem_config("database")
   db_path <- validate_db_path(subdir = db_config$path, filename = db_config$name)
   con_auth <- establish_duckdb_connection(db_path, read_only = TRUE)
-  
+
   users_db <- tryCatch({
     DBI::dbGetQuery(con_auth, "SELECT username, password_hash, role FROM users WHERE is_active = 1")
   }, error = function(e) {
     cli::cli_warn("Failed to load users: {conditionMessage(e)}")
     data.frame(username = character(), password_hash = character(), role = character())
   })
-  
+  res_auth <- shinymanager::secure_server(
+    check_credentials = shinymanager::check_credentials(users_db)
+  )
+
   DBI::dbDisconnect(con_auth)
-  
+
   # Initialize error message reactive
   error_msg <- reactiveVal("")
-  
+
   # Render error message output
   output$auth_error_msg <- renderText(error_msg())
-  
+
   # Render login or main app based on auth status
   output$auth_ui <- shiny::renderUI({
     if (is_authenticated()) {
@@ -43,27 +46,28 @@ app_server <- function(input, output, session) {
       shinyjs::hide("main_app_container")
       div(
         class = "container mt-5",
-        style = "max-width: 400px;",
+        style = "max-width: 500px;",
         div(
           class = "card",
           div(
             class = "card-body",
-            h3("Submission Editor & Reviewer"),
-            p("Secure multi-user workflow", class = "text-muted"),
+            div(img(src = "www/favicon.png", class = "mb-4", style = "max-height: 100px;"), class = "text-center"),
+            h4("Login to editable.submissionsync"),
+            p("Audit-Ready Clinical Dataset Review Platform", class = "text-muted"),
             br(),
-            
+
             div(
               class = "mb-3",
-              tags$label("Username", `for` = "username", class = "form-label"),
+              tags$label("Username", `for` = "user", class = "form-label"),
               tags$input(
-                id = "username",
+                id = "user",
                 type = "text",
                 class = "form-control",
-                placeholder = "Enter username",
-                required = NA  
+                placeholder = "Enter user",
+                required = NA
               )
             ),
-            
+
             div(
               class = "mb-3",
               tags$label("Password", `for` = "password", class = "form-label"),
@@ -75,14 +79,14 @@ app_server <- function(input, output, session) {
                 required = NA
               )
             ),
-            
+
             div(
               id = "auth_error",
               class = "alert alert-danger d-none",
               role = "alert",
               shiny::textOutput("auth_error_msg")
             ),
-            
+
             shiny::actionButton(
               "login_btn",
               "Login",
@@ -94,52 +98,52 @@ app_server <- function(input, output, session) {
       )
     }
   })
-  
+
   # Handle login button click
   shiny::observeEvent(input$login_btn, ignoreInit = TRUE, {
-    username <- input$username
+    user <- input$user
     password <- input$password
-    
+
     tryCatch({
       # Validate input
-      if (is.null(username) || username == "") {
+      if (is.null(user) || user == "") {
         error_msg("Username is required")
         shinyjs::removeClass("auth_error", "d-none")
         return()
       }
-      
+
       if (is.null(password) || password == "") {
         error_msg("Password is required")
         shinyjs::removeClass("auth_error", "d-none")
         return()
       }
-      
+
       # Find user
-      user_row <- users_db[users_db$username == username, ]
-      
+      user_row <- users_db[users_db$user == user, ]
+
       if (nrow(user_row) == 0) {
-        error_msg("Invalid username or password")
+        error_msg("Invalid user or password")
         shinyjs::removeClass("auth_error", "d-none")
         return()
       }
-      
+
       # Verify password (assuming bcrypt hashed)
-      stored_hash <- user_row$password_hash[1]
-      
+      stored_hash <- user_row$password[1]
+
       # Check if password matches hash using bcrypt
       password_match <- bcrypt::checkpw(password, stored_hash)
-      
+
       if (!password_match) {
-        error_msg("Invalid username or password")
+        error_msg("Invalid user or password")
         shinyjs::removeClass("auth_error", "d-none")
         return()
       }
-      
+
       # Authentication successful
       error_msg("")  # Clear error
       shinyjs::addClass("auth_error", "d-none")
-      session$userData$username <- user_row$username[1]
-      session$userData$user_id <- which(users_db$username == user_row$username[1])
+      session$userData$user <- user_row$user[1]
+      session$userData$user_id <- which(users_db$user == user_row$user[1])
       session$userData$user_role <- user_row$role[1]
       is_authenticated(TRUE)
     }, error = function(e) {
@@ -147,11 +151,10 @@ app_server <- function(input, output, session) {
       shinyjs::removeClass("auth_error", "d-none")
     })
   })
-  
+
   # Only proceed with main app logic if authenticated
   shiny::observe({
-    req(is_authenticated())
-    
+    req(res_auth$authorized)
     # ===== Reactive user values =====
     user_id <- reactive({
       session$userData$user_id %||% NA
@@ -162,7 +165,7 @@ app_server <- function(input, output, session) {
     })
 
     user_name <- reactive({
-      session$userData$username %||% "Unknown"
+      session$userData$user %||% "Unknown"
     })
 
     # ===== Get database connection =====
@@ -180,12 +183,12 @@ app_server <- function(input, output, session) {
     }
     if (is.null(session$userData$submission_service)) {
       session$userData$submission_service <- SubmissionService$new(
-        isolate(con()), 
-        session$userData$audit_service, 
+        isolate(con()),
+        session$userData$audit_service,
         access_control
       )
     }
-    
+
     # Create local references for convenience
     audit_service <- session$userData$audit_service
     user_auth <- session$userData$user_auth

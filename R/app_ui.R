@@ -7,10 +7,10 @@
 app_ui <- function(request) {
   tagList(
     shinyjs::useShinyjs(),
-    
+
     # Conditional UI based on authentication
     shiny::uiOutput("auth_ui"),
-    
+
     # Hidden main app UI (shown after login)
     shinyjs::hidden(
       div(

@@ -288,7 +288,7 @@ SubmissionService <- R6::R6Class(
       DBI::dbGetQuery(private$con,
         "SELECT s.id,
                 s.created_by,
-                u.username as editor_name,
+                u.user as editor_name,
                 s.submitted_at,
                 s.review_comment
          FROM submissions s
