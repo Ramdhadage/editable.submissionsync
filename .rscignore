@@ -13,3 +13,10 @@ dev
 man
 vignettes
 tests
+.github
+.result
+test
+test-coverage
+.vscode
+CONTRIBUTING.md
+data-raw
