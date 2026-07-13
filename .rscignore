@@ -20,3 +20,5 @@ test-coverage
 .vscode
 CONTRIBUTING.md
 data-raw
+.project_doc
+Meta
