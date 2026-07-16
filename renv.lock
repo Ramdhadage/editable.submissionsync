@@ -1025,6 +1025,17 @@
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
       "Repository": "CRAN"
     },
+    "editable.submissionsync": {
+      "Package": "editable.submissionsync",
+      "Version": "0.1.0",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "Ramdhadage",
+      "RemoteRepo": "editable.submissionsync",
+      "RemoteRef": "main",
+      "RemoteSha": "4db1bd85d88f68c4165d8c236e9e87ee01a93f15"
+    },
     "evaluate": {
       "Package": "evaluate",
       "Version": "1.0.5",

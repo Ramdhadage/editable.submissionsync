@@ -41,6 +41,57 @@ validate_db_path <- function(package = "editable.submissionsync",
 
 
 
+#' Resolve a deployable DuckDB path
+#'
+#' @description
+#' Returns a path that can be opened safely in both local development and
+#' production deployments. When the bundled DuckDB file lives in a read-only
+#' package installation location (such as shinyapps.io), this function copies
+#' the database to a writable temporary directory and returns that path.
+#'
+#' @param db_path Character. Source path to the DuckDB file.
+#' @param read_only Logical. Whether the connection should be opened read-only.
+#'
+#' @return Character. A path to a readable DuckDB database file.
+#' @keywords internal
+resolve_duckdb_path <- function(db_path, read_only = FALSE) {
+  tryCatch({
+    checkmate::assert_character(db_path, len = 1, min.chars = 1)
+
+    if (!file.exists(db_path)) {
+      cli::cli_abort(c(
+        "DuckDB file not found",
+        "i" = "Path: {db_path}"
+      ))
+    }
+
+    if (read_only) {
+      return(normalizePath(db_path, winslash = "/", mustWork = TRUE))
+    }
+
+    db_dir <- dirname(db_path)
+    if (dir.exists(db_dir) && file.access(db_dir, 2) == 0) {
+      return(normalizePath(db_path, winslash = "/", mustWork = TRUE))
+    }
+
+    target_dir <- file.path(tempdir(), "editable.submissionsync")
+    dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+
+    target_path <- file.path(target_dir, basename(db_path))
+    if (!file.exists(target_path) || file.info(target_path)$size != file.info(db_path)$size) {
+      file.copy(db_path, target_path, overwrite = TRUE)
+    }
+
+    normalizePath(target_path, winslash = "/", mustWork = TRUE)
+  }, error = function(e) {
+    cli::cli_abort(c(
+      "Failed to resolve DuckDB path",
+      "i" = "Source path: {db_path}",
+      "x" = "Error: {conditionMessage(e)}"
+    ))
+  })
+}
+
 #' Establish DuckDB Connection
 #'
 #' @description
@@ -61,12 +112,20 @@ validate_db_path <- function(package = "editable.submissionsync",
 #' @keywords internal
 establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
   tryCatch({
-    db_dir <- dirname(temp_db)
-    checkmate::assert_directory_exists(db_dir, access = "w")
-    checkmate::assert_file_exists(temp_db, access = "r")
+    resolved_db <- resolve_duckdb_path(temp_db, read_only = read_only)
+    db_dir <- dirname(resolved_db)
+
+    if (!dir.exists(db_dir)) {
+      dir.create(db_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+
+    if (!read_only && file.access(resolved_db, 2) != 0 && file.access(db_dir, 2) != 0) {
+      cli::cli_abort("Resolved DuckDB path is not writable")
+    }
+
     con <- DBI::dbConnect(
       duckdb::duckdb(),
-      dbdir = temp_db,
+      dbdir = resolved_db,
       read_only = read_only
     )
 
@@ -75,6 +134,7 @@ establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
     cli::cli_abort(c(
       "Failed to establish DuckDB connection",
       "i" = "Database path: {temp_db}",
+      "i" = "Resolved path: {if (exists('resolved_db')) resolved_db else temp_db}",
       "i" = "Read-only mode: {read_only}",
       "x" = "Error: {conditionMessage(e)}"
     ))
