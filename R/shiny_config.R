@@ -19,22 +19,22 @@
 #' @return Named list of Shiny server options
 get_shiny_server_options <- function() {
   in_test <- nzchar(Sys.getenv("SHINYTEST_REMOTE"))
-  
+
   list(
     compression = if (in_test) "none" else "gzip",
-    compression_level = if (in_test) 0 else 9, 
+    compression_level = if (in_test) 0 else 9,
     app.static_assets = list(
       cache_control_max_age = 31536000,
       use_etags = TRUE
     ),
-    
+
     session_timeout = 60,  # seconds
-    
+
     enable_bookmarking = FALSE,
-    
+
     suppress_connection_messages = if (in_test) FALSE else TRUE,
     host = "127.0.0.1",
-    port = 7159
+    port = 7160
   )
 }
 
@@ -49,7 +49,7 @@ get_shiny_server_options <- function() {
 #' @keywords internal
 apply_shiny_performance_config <- function() {
   opts <- get_shiny_server_options()
-  
+
   if (!is.null(opts$compression)) {
     options(shiny.response_compression = opts$compression)
     options(shiny.compression_level = opts$compression_level)
@@ -57,6 +57,6 @@ apply_shiny_performance_config <- function() {
   if (!is.null(opts$suppress_connection_messages)) {
     options(shiny.suppress_connection_messages = opts$suppress_connection_messages)
   }
-  
+
   invisible(NULL)
 }
