@@ -385,7 +385,7 @@ DataStore <- R6::R6Class(
         entry <- sprintf("%s: %s, User: %s", timestamp, if (!is.null(details) && nzchar(details)) details else action, user_name)
       }
 
-      private$audit_log <- c(entry, private$audit_log)
+      private$audit_log <- c(private$audit_log, entry)
       private$audit_log <- tail(private$audit_log, 200)
     },
     finalize = function() {
