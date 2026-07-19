@@ -23,16 +23,21 @@ mod_table_ui <- function(id) {
     golem_add_external_resources(),
     div(
       class = "action-buttons mb-3 save-revert-buttons",
-      actionButton(
+      bslib::tooltip(actionButton(
         ns("save"),
-        "Save Changes",
+        label = "",
+        icon = bsicons::bs_icon("save", size = "2em"),
         class = "btn btn-outline-secondary"
       ),
-      actionButton(
+      "Save Changes",
+      ),
+      bslib::tooltip(actionButton(
         ns("revert"),
-        "Revert Changes",
-        icon = icon("undo"),
+        label = "",
+        icon = bsicons::bs_icon("arrow-counterclockwise", size = "2em"),
         class = "btn btn-outline-danger"
+      ),
+      "Revert Changes"
       )
     ),
 

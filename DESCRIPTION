@@ -7,6 +7,7 @@ Description: A lightweight table viewer package.
 License: MIT + file LICENSE
 Imports: 
     awn,
+    bsicons,
     bslib,
     checkmate,
     cli,

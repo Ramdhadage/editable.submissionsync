@@ -29,23 +29,27 @@ app_ui <- function(request) {
 
       bslib::nav_spacer(),
       bslib::nav_panel(
-        title = "Home",
         value = "home",
-
+        title =  bslib::tooltip(bsicons::bs_icon("house-door", size = "2.5em"), "Home",placement = "bottom"),
         strong(h1("ADaM ADSL Dataset")),
         p("Interactive data table with real-time editing"),
         mod_table_ui("table")
       ),
 
       bslib::nav_panel(
-        title = "Analytics",
+        title = bslib::tooltip(bsicons::bs_icon("bar-chart-line", size = "2.5em"), "Analytics", placement = "bottom"),
         value = "analytics"
       ),
 
       bslib::nav_panel(
-        title = "Settings",
+        title = bslib::tooltip(bsicons::bs_icon("gear", size = "2.5em"), "Settings", placement = "bottom"),
         value = "settings"
-      )
+      ),
+
+      bslib::nav_panel(
+        title = bslib::tooltip(bsicons::bs_icon("journal-text", size = "2.5em"), "Logs", placement = "bottom"),
+        value = "settings"
+      ),
     )
   )
 }
