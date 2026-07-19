@@ -34,7 +34,7 @@ get_shiny_server_options <- function() {
 
     suppress_connection_messages = if (in_test) FALSE else TRUE,
     host = "127.0.0.1",
-    port = 7160
+    port = 1000
   )
 }
 

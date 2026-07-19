@@ -46,11 +46,12 @@ mod_table_ui <- function(id) {
           div(
             class = "hotwidget-container",
             withCustomSpinner(
-              hotwidgetOutput(ns("table"), height = "500px"),
+              hotwidgetOutput(ns("table"), height = "auto"),
               min_height = "520px"
             )
           )
-        )
+        ),
+        fill = FALSE
       ),
 
       bslib::card(
@@ -148,10 +149,10 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       SUBJID = c("summary_rows"),
       SITEID = c("summary_rows")
     )
-    row_count_trigger <- reactiveVal(0)     
-    age_trigger <- reactiveVal(0)            
-    bmibl_trigger <- reactiveVal(0)       
-    modified_trigger <- reactiveVal(0)   
+    row_count_trigger <- reactiveVal(0)
+    age_trigger <- reactiveVal(0)
+    bmibl_trigger <- reactiveVal(0)
+    modified_trigger <- reactiveVal(0)
 
     table_data <- shiny::reactive({
       store_trigger()
@@ -174,7 +175,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       } else {
         NULL
       }
-      
+
       if (!is.null(delta)) {
         result <- hotwidget(
           data = data,
@@ -188,7 +189,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       }
       hotwidget(data = data)
     })
-    edit_batch <- reactiveVal(list()) 
+    edit_batch <- reactiveVal(list())
     edit_timer <- reactiveVal(NULL)
 
     shiny::observeEvent(input$table_edit, {
@@ -243,7 +244,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
             )
             next
           }
-          
+
           r_row <- edit$row + 1
           store_reactive()$update_cell(
             row = r_row,
@@ -371,7 +372,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
         row_count_trigger(row_count_trigger() + 1)
         age_trigger(age_trigger() + 1)
         bmibl_trigger(bmibl_trigger() + 1)
-        modified_trigger(modified_trigger() + 1) 
+        modified_trigger(modified_trigger() + 1)
         store_trigger(store_trigger() + 1)
 
         shinyjs::disable("save")
