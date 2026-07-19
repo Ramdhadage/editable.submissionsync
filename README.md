@@ -17,7 +17,7 @@ It introduces a **structured, audit-ready workflow** to replace fragmented proce
 - **📊 Excel-Like Interface** - Familiar spreadsheet experience with HandsOnTable integration
 - **📜 Full Audit Trail** - Automatically logs User, Field changed, Previous value, New value and Timestamp. Also, provides **complete traceability for audits**
 - **🔍 Review and Approval Workflow** - Role-based system: **Editor** → makes changes and **Reviewer** → approves/rejects
-- **🔐 Role-Based Access Control** - Secure login system and  controlled access based on responsibility
+- **🔐 Role-Based Access Control** — Secure login with granular permission levels (Viewer, Editor, Reviewer, Admin)
 - **💾 Database Persistence** - Seamless DuckDB backend for reliable data storage
 - **🔄 Change Tracking** - Built-in undo/revert functionality for data safety
 - **🧩 Modular Architecture** - Reusable Shiny modules for rapid development
@@ -26,6 +26,25 @@ It introduces a **structured, audit-ready workflow** to replace fragmented proce
 - **📊 Dynamic Visualization** - Generate plots (e.g., swimmer plots) and automatically reflect dataset updates
 - **📈 Data Summaries** - Automatic statistical summaries for numeric columns
 - **🏗️ Production-Ready** - Built with Golem framework for scalability
+
+---
+
+---
+
+## 🚀 Live Demo
+
+**Try it now:** [https://ti5syn-ramdhadage.shinyapps.io/editable/](https://ti5syn-ramdhadage.shinyapps.io/editable/)
+
+### Demo Credentials
+
+Choose a role to explore features tailored to your responsibility level:
+
+| Role | Username | Password | Permissions |
+|:---|:---|:---|:---|
+| **👁️ Viewer** | `viewer` | `Viewer@123` | Read-only |
+| **✅ Reviewer** | `reviewer` | `Reviewer@123` | Comment & Approve |
+| **✏️ Editor** | `editor` | `Editor@123` | Read, Write & Modify |
+| **🔑 Admin** | `admin` | `Admin@123` | Full control |
 
 ---
 
@@ -75,6 +94,17 @@ shinyApp(ui, server)
 
 ---
 
+## Use Cases
+
+| Use Case | Description | Who Benefits |
+|---|---|---|
+| **Pre-Submission Review** | Consolidate final dataset corrections before regulatory submission | Clinical Data Managers |
+| **Change Governance** | Track who changed what and when with immutable audit trail | Compliance Officers |
+| **Team Collaboration** | Enable editors to submit changes; reviewers approve/reject with comments | Data Teams |
+| **Data Validation** | Catch type mismatches and out-of-range values in real-time | QA/Validation Teams |
+| **Regulatory Readiness** | Export audit-ready change logs for FDA/EMA submissions | Regulatory Affairs |
+
+---
 ## Architecture
 
 ### System Design
@@ -374,6 +404,22 @@ devtools::test()
 - **Issues**: [GitHub Issues](https://github.com/Ramdhadage/editable/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Ramdhadage/editable/discussions)
 - **Email**: ram.dhadage123@gmail.com
+
+---
+
+## FAQ
+
+**Q: Is this production-ready?**  
+A: The core data management and UI are production-grade. Authentication and audit logging are currently at MVP level; they will be hardened before use in regulated environments.
+
+**Q: Can I connect to my existing database?**  
+A: Yes. The DuckDB backend can read from PostgreSQL, MySQL, and other sources. See documentation for connection details.
+
+**Q: What's the maximum dataset size?**  
+A: Tested to 10M rows in DuckDB. UI performance depends on viewport size; recommend ≤100K rows for browser display.
+
+**Q: How do I export audit logs for compliance?**  
+A: Use `store$get_audit_log()` to export change history as CSV/JSON. Full regulatory documentation coming in v0.2.
 
 ---
 
