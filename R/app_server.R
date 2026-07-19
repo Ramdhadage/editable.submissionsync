@@ -18,6 +18,26 @@ app_server <- function(input, output, session) {
   store <- get_cached_store()
   store_reactive <- reactiveVal(store)
   store_trigger <- reactiveVal(0)
-  mod_table_server("table", store_reactive, store_trigger)
+
+  output$logs_panel <- renderUI({
+    store_trigger()
+    entries <- store_reactive()$get_audit_log()
+
+    if (length(entries) == 0) {
+      div(class = "text-muted small", "No activity yet.")
+    } else {
+      div(
+        class = "d-flex flex-column gap-2",
+        lapply(entries, function(entry) {
+          div(
+            class = "border rounded p-2 bg-light small font-monospace",
+            entry
+          )
+        })
+      )
+    }
+  })
+
+  mod_table_server("table", store_reactive, store_trigger, current_user)
   shinyjs::hide("page-loading-spinner")
 }

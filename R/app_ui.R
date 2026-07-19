@@ -43,7 +43,14 @@ app_ui <- function(request) {
       ),
       bslib::nav_panel(
         title = bslib::tooltip(bsicons::bs_icon("journal-text", size = "2.5em"), "Logs", placement = "bottom"),
-        value = "settings"
+        value = "logs",
+        bslib::card(
+          class = "border-0 shadow-sm",
+          bslib::card_header("Activity Log"),
+          bslib::card_body(
+            shiny::uiOutput("logs_panel")
+          )
+        )
       ),
     )
   )

@@ -138,7 +138,7 @@ mod_table_ui <- function(id) {
 #' }
 #'
 #' @export
-mod_table_server <- function(id, store_reactive, store_trigger) {
+mod_table_server <- function(id, store_reactive, store_trigger, current_user = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     shinyjs::disable("save")
     shinyjs::disable("revert")
@@ -149,6 +149,19 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
       SITEID = c("summary_rows")
     )
     row_count_trigger <- reactiveVal(0)
+    resolve_user <- function() {
+      if (is.function(current_user)) {
+        value <- current_user()
+        if (is.null(value) || length(value) == 0 || is.na(value)) {
+          return("system")
+        }
+        return(as.character(value))
+      }
+      if (is.null(current_user) || length(current_user) == 0 || is.na(current_user)) {
+        return("system")
+      }
+      as.character(current_user)
+    }
     age_trigger <- reactiveVal(0)
     bmibl_trigger <- reactiveVal(0)
     modified_trigger <- reactiveVal(0)
@@ -251,7 +264,8 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
             store_reactive()$update_cell(
               row = r_row,
               col = edit$col,
-              value = edit$value
+              value = edit$value,
+              user = resolve_user()
             )
             updated_cells[[length(updated_cells) + 1]] <- list(
               row = r_row,
@@ -341,7 +355,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     shiny::observeEvent(input$confirm_save, {
       tryCatch(
         {
-          store_reactive()$save()
+          store_reactive()$save(user = resolve_user())
 
           row_count_trigger(row_count_trigger() + 1)
           age_trigger(age_trigger() + 1)
@@ -374,7 +388,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     shiny::observeEvent(input$revert, {
       tryCatch(
         {
-          store_reactive()$revert()
+          store_reactive()$revert(user = resolve_user())
 
           row_count_trigger(row_count_trigger() + 1)
           age_trigger(age_trigger() + 1)

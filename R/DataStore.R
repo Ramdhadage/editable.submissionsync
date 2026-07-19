@@ -66,6 +66,7 @@ DataStore <- R6::R6Class(
           self$original <- data.frame(query_result, check.names = TRUE)
           self$data <- data.frame(query_result, check.names = TRUE)
           private$modified_cells <- 0
+          private$audit_log <- character(0)
 
           cli::cli_inform("DataStore initialized: {nrow(self$data)} rows loaded from DuckDB")
         },
@@ -100,7 +101,7 @@ DataStore <- R6::R6Class(
     #' \dontrun{
     #' store$revert()
     #' }
-    revert = function() {
+    revert = function(user = "system") {
       tryCatch(
         {
           checkmate::assert_data_frame(self$original, null.ok = FALSE)
@@ -116,7 +117,13 @@ DataStore <- R6::R6Class(
               ))
             }
           )
-
+ if (private$modified_cells > 0) {
+             private$record_audit_event(
+            action = "revert",
+            user = user,
+            details = sprintf("%d rows", nrow(self$data))
+          )
+          }
           self$data <- reverted_data
           private$modified_cells <- 0
           private$.summary_cache <- NULL # Invalidate cache on revert
@@ -205,7 +212,7 @@ DataStore <- R6::R6Class(
     #' store$update_cell(1, "mpg", 22.5)
     #' store$update_cell(2, 4, 120)  # Using column index
     #' }
-    update_cell = function(row, col, value) {
+    update_cell = function(row, col, value, user = "system") {
       validate_data(self$data)
 
       validate_row(row, self$data)
@@ -227,7 +234,16 @@ DataStore <- R6::R6Class(
 
       validate_no_na_loss(coerced_value, value, col_name)
 
+      previous_value <- self$data[row, col_name]
       self$data[row, col_name] <- coerced_value
+      private$record_audit_event(
+        action = "cell_update",
+        row = row,
+        col = col_name,
+        previous_value = previous_value,
+        new_value = coerced_value,
+        user = user
+      )
 
       private$modified_cells <- private$modified_cells + 1
       private$.summary_cache <- NULL
@@ -252,7 +268,7 @@ DataStore <- R6::R6Class(
     #' \dontrun{
     #' store$save()
     #' }
-    save = function() {
+    save = function(user = "system") {
       tryCatch(
         {
           validate_save_connection(self$con)
@@ -265,6 +281,11 @@ DataStore <- R6::R6Class(
           self$original <- data.frame(self$data, check.names = FALSE)
 
           private$modified_cells <- 0
+          private$record_audit_event(
+            action = "save",
+            user = user,
+            details = sprintf("%d rows", nrow(self$data))
+          )
 
           cli::cli_inform("Data saved to DuckDB: {nrow(self$data)} rows saved successfully")
           invisible(self)
@@ -287,13 +308,86 @@ DataStore <- R6::R6Class(
     #' }
     get_modified_count = function() {
       private$modified_cells
+    },
+    #' @description
+    #' Returns the recent audit trail for UI display.
+    #'
+    #' @param limit Integer. Maximum number of entries to return.
+    #' @return Character vector of audit entries.
+    get_audit_log = function(limit = 100L) {
+      if (is.null(private$audit_log)) {
+        return(character(0))
+      }
+      if (length(private$audit_log) <= limit) {
+        return(private$audit_log)
+      }
+      tail(private$audit_log, n = limit)
     }
   ),
   private = list(
     db_path = NULL,
     modified_cells = 0,
+    audit_log = character(0),
     .summary_cache = NULL,
     .column_cache = list(),
+    record_audit_event = function(action, row = NULL, col = NULL, previous_value = NULL, new_value = NULL, user = "system", details = NULL) {
+      value_to_text <- function(value) {
+        if (is.null(value)) {
+          return("<empty>")
+        }
+        if (length(value) != 1) {
+          return(paste(as.character(value), collapse = ", "))
+        }
+        if (is.na(value)) {
+          return("<NA>")
+        }
+        as.character(value)
+      }
+
+      timestamp <- format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6")
+      utc_offset <- format(Sys.time(), "%z")
+      if (nchar(utc_offset) == 5) {
+        utc_offset <- paste0(substr(utc_offset, 1, 3), ":", substr(utc_offset, 4, 5))
+      }
+      timestamp <- paste0(timestamp, utc_offset)
+
+      user_name <- if (is.null(user) || length(user) == 0 || is.na(user)) {
+        "system"
+      } else {
+        as.character(user)
+      }
+
+      if (identical(action, "cell_update")) {
+        entry <- sprintf(
+          "%s: Value: %s to %s, Cell updated: Row %s, Col '%s', User: %s",
+          timestamp,
+          value_to_text(previous_value),
+          value_to_text(new_value),
+          row,
+          col,
+          user_name
+        )
+      } else if (identical(action, "revert")) {
+        entry <- sprintf(
+          "%s: Data reverted to original state%s, User: %s",
+          timestamp,
+          if (!is.null(details) && nzchar(details)) paste0(" (", details, ")") else "",
+          user_name
+        )
+      } else if (identical(action, "save")) {
+        entry <- sprintf(
+          "%s: Data saved to database%s, User: %s",
+          timestamp,
+          if (!is.null(details) && nzchar(details)) paste0(" (", details, ")") else "",
+          user_name
+        )
+      } else {
+        entry <- sprintf("%s: %s, User: %s", timestamp, if (!is.null(details) && nzchar(details)) details else action, user_name)
+      }
+
+      private$audit_log <- c(entry, private$audit_log)
+      private$audit_log <- tail(private$audit_log, 200)
+    },
     finalize = function() {
       # Disconnect from DuckDB
       if (!is.null(self$con)) {

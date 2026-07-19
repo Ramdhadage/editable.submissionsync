@@ -37,6 +37,20 @@ test_that("update_cell handles numeric columns correctly", {
   expect_type(store$data[1, "AGE"], "double")
 })
 
+test_that("update_cell records a lightweight audit entry", {
+  store <- DataStore$new()
+  previous_value <- store$data[1, "AGE"]
+
+  store$update_cell(row = 1, col = "AGE", value = 50, user = "admin")
+
+  audit_log <- store$get_audit_log()
+  expect_true(length(audit_log) >= 1)
+  expect_true(any(grepl("Cell updated", audit_log[[1]])))
+  expect_true(any(grepl("admin", audit_log[[1]])))
+  expect_true(any(grepl(as.character(previous_value), audit_log[[1]])))
+  expect_true(any(grepl("50", audit_log[[1]])))
+})
+
 test_that("update_cell validates row bounds", {
   # Arrange
   store <- DataStore$new()
