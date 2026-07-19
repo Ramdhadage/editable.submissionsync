@@ -78,7 +78,7 @@ test_that("load_mtcars_data loads entire table from canonical database", {
   expect_s3_class(result, "data.frame")
   expect_gt(nrow(result), 0)
   expect_gt(ncol(result), 0)
-  expect_equal(nrow(result), 32)  # mtcars has 32 rows
+  expect_equal(nrow(result), 32) # mtcars has 32 rows
   DBI::dbDisconnect(con, shutdown = TRUE)
 })
 
@@ -118,10 +118,12 @@ test_that("load_mtcars_data warns but does not abort on table not found", {
   con <- establish_duckdb_connection(db_path)
 
   # This should warn, not error
-  result <-  expect_warning(load_mtcars_data(con,
-                                    table = "invalid_table_name"),
-                   "Failed to load table from DuckDB"
-    )
+  result <- expect_warning(
+    load_mtcars_data(con,
+      table = "invalid_table_name"
+    ),
+    "Failed to load table from DuckDB"
+  )
   # Cleanup
   DBI::dbDisconnect(con, shutdown = TRUE)
 })
@@ -210,7 +212,7 @@ test_that("validate_data throws cli_abort for non-data.frame", {
 
 test_that("validate_row accepts valid row index", {
   expect_invisible(validate_row(1, mtcars))
-  expect_invisible(validate_row(32, mtcars))  # Last row of mtcars
+  expect_invisible(validate_row(32, mtcars)) # Last row of mtcars
 })
 
 test_that("validate_row throws cli_abort for row below range", {
@@ -261,7 +263,7 @@ test_that("validate_column throws cli_abort for numeric index out of bounds", {
   )
 
   expect_error(
-    validate_column(12, mtcars),  # mtcars has 11 columns
+    validate_column(12, mtcars), # mtcars has 11 columns
     class = "rlang_error"
   )
 })
@@ -434,7 +436,7 @@ test_that("detect_numeric_columns finds numeric columns in mtcars", {
   expect_true("mpg" %in% result)
   expect_true("hp" %in% result)
   expect_true("cyl" %in% result)
-  expect_false("am" %in% result)  # am is stored as numeric but often treated as factor
+  expect_false("am" %in% result) # am is stored as numeric but often treated as factor
 })
 
 test_that("detect_numeric_columns returns all names for all-numeric data", {
@@ -537,7 +539,7 @@ test_that("DataStore$summary includes numeric means", {
 
 test_that("DataStore$summary throws cli_abort when data is NULL", {
   store <- DataStore$new()
-  store$data <- NULL  # Intentionally corrupt
+  store$data <- NULL # Intentionally corrupt
 
   expect_error(
     store$summary(),
@@ -637,7 +639,6 @@ test_that("validate_save_data throws cli_abort for empty data.frame", {
 })
 
 test_that("delete_mtcars_table succeeds when table exists", {
-
   store <- DataStore$new()
 
   # Table should exist after initialization

@@ -33,51 +33,56 @@ with_fresh_mtcars_db <- function() {
     unlink(db_path)
   }
 
-  tryCatch({
-    con <- DBI::dbConnect(
-      duckdb::duckdb(),
-      dbdir = db_path,
-      read_only = FALSE
-    )
+  tryCatch(
+    {
+      con <- DBI::dbConnect(
+        duckdb::duckdb(),
+        dbdir = db_path,
+        read_only = FALSE
+      )
 
-    mtcars_data <- mtcars
+      mtcars_data <- mtcars
 
-    mtcars_data$am <- as.logical(mtcars_data$am)
-    mtcars_data$vs <- as.factor(mtcars_data$vs)
-    mtcars_data$cyl <- as.factor(mtcars_data$cyl)
-    mtcars_data$gear <- as.factor(mtcars_data$gear)
-    mtcars_data$carb <- as.factor(mtcars_data$carb)
+      mtcars_data$am <- as.logical(mtcars_data$am)
+      mtcars_data$vs <- as.factor(mtcars_data$vs)
+      mtcars_data$cyl <- as.factor(mtcars_data$cyl)
+      mtcars_data$gear <- as.factor(mtcars_data$gear)
+      mtcars_data$carb <- as.factor(mtcars_data$carb)
 
-    DBI::dbWriteTable(
-      con,
-      "mtcars",
-      mtcars_data,
-      overwrite = TRUE
-    )
+      DBI::dbWriteTable(
+        con,
+        "mtcars",
+        mtcars_data,
+        overwrite = TRUE
+      )
 
-    DBI::dbDisconnect(con, shutdown = TRUE)
+      DBI::dbDisconnect(con, shutdown = TRUE)
 
-    cli::cli_inform("Fresh mtcars database created")
+      cli::cli_inform("Fresh mtcars database created")
+    },
+    error = function(e) {
+      if (!is.null(con)) {
+        tryCatch(
+          {
+            DBI::dbDisconnect(con, shutdown = TRUE)
+          },
+          error = function(x) NULL
+        )
+      }
 
-  }, error = function(e) {
-    if (!is.null(con)) {
-      tryCatch({
-        DBI::dbDisconnect(con, shutdown = TRUE)
-      }, error = function(x) NULL)
+      if (file.exists(db_path)) {
+        unlink(db_path)
+      }
+      if (file.exists(wal_file)) {
+        unlink(wal_file)
+      }
+
+      cli::cli_abort(c(
+        "Failed to create fresh mtcars database",
+        "x" = "{conditionMessage(e)}"
+      ))
     }
-
-    if (file.exists(db_path)) {
-      unlink(db_path)
-    }
-    if (file.exists(wal_file)) {
-      unlink(wal_file)
-    }
-
-    cli::cli_abort(c(
-      "Failed to create fresh mtcars database",
-      "x" = "{conditionMessage(e)}"
-    ))
-  })
+  )
 
   invisible(NULL)
 }

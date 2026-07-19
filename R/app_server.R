@@ -11,7 +11,10 @@ app_server <- function(input, output, session) {
   res_auth <- secure_server(
     check_credentials = check_credentials(credentials)
   )
-  current_user  <- reactive({ req(res_auth$user);  res_auth$user  })
+  current_user <- reactive({
+    req(res_auth$user)
+    res_auth$user
+  })
   store <- get_cached_store()
   store_reactive <- reactiveVal(store)
   store_trigger <- reactiveVal(0)

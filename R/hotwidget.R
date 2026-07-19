@@ -45,7 +45,7 @@
 #'   hotwidget(
 #'     data = store$data,
 #'     type = "delta",
-#'     updatedCells = list(list(row=1, col="mpg", value=22.5)),
+#'     updatedCells = list(list(row = 1, col = "mpg", value = 22.5)),
 #'     affectedColumns = "mpg"
 #'   )
 #' })
@@ -54,9 +54,8 @@
 #' @import htmlwidgets
 #' @export
 hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = NULL,
-                      affectedColumns = NULL, width = NULL, height = NULL, 
+                      affectedColumns = NULL, width = NULL, height = NULL,
                       elementId = NULL, editable_cols = NULL) {
-
   if (missing(data) || is.null(data)) {
     stop("'data' parameter is required")
   }
@@ -65,12 +64,15 @@ hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = 
     stop("'data' must be a data.frame")
   }
   if (is.null(editable_cols)) {
-    schema_config <- tryCatch({
-      get_golem_config("schema")
-    }, error = function(e) {
-      NULL
-    })
-    
+    schema_config <- tryCatch(
+      {
+        get_golem_config("schema")
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+
     if (!is.null(schema_config)) {
       editable_cols <- sapply(names(data), function(col_name) {
         isTRUE(schema_config[[col_name]]$editable %||% TRUE)
@@ -95,7 +97,7 @@ hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = 
     pmin(pmax(final_width, 100), 500)
   })
 
-  x = list(
+  x <- list(
     data = data,
     type = type,
     updatedCells = updatedCells,
@@ -112,11 +114,11 @@ hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = 
 
   # create widget
   htmlwidgets::createWidget(
-    name = 'hotwidget',
+    name = "hotwidget",
     x,
     width = width,
     height = height,
-    package = 'editable.submissionsync',
+    package = "editable.submissionsync",
     elementId = elementId
   )
 }
@@ -138,13 +140,15 @@ hotwidget <- function(data, type = "full", updatedCells = NULL, modifiedCount = 
 #' @name hotwidget-shiny
 #'
 #' @export
-hotwidgetOutput <- function(outputId, width = '100%', height = '400px'){
-  htmlwidgets::shinyWidgetOutput(outputId, 'hotwidget', width, height, package = 'editable.submissionsync')
+hotwidgetOutput <- function(outputId, width = "100%", height = "400px") {
+  htmlwidgets::shinyWidgetOutput(outputId, "hotwidget", width, height, package = "editable.submissionsync")
 }
 
 #' @rdname hotwidget-shiny
 #' @export
 renderHotwidget <- function(expr, env = parent.frame(), quoted = FALSE) {
-  if (!quoted) { expr <- substitute(expr) } # force quoted
+  if (!quoted) {
+    expr <- substitute(expr)
+  } # force quoted
   htmlwidgets::shinyRenderWidget(expr, hotwidgetOutput, env, quoted = TRUE)
 }

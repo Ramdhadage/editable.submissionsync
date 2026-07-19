@@ -1,4 +1,3 @@
-
 test_that("DataStore initializes correctly from DuckDB", {
   store <- DataStore$new()
   expect_s3_class(store, "DataStore")
@@ -160,7 +159,7 @@ test_that("revert throws cli_abort when original is NULL", {
 test_that("revert throws cli_abort when original is not a data.frame", {
   # Arrange
   store <- DataStore$new()
-  store$original <- list(a = 1, b = 2)  # Not a data.frame
+  store$original <- list(a = 1, b = 2) # Not a data.frame
 
   # Act & Assert
   expect_error(
@@ -189,7 +188,7 @@ test_that("revert message includes row count", {
   # Act & Assert
   expect_message(
     store$revert(),
-    sprintf("\\d+ rows")  # Regex to match any number + "rows"
+    sprintf("\\d+ rows") # Regex to match any number + "rows"
   )
 })
 
@@ -263,7 +262,7 @@ test_that("revert integrates with update_cell workflow", {
   store$update_cell(3, "DURDIS", 200)
   expect_equal(store$get_modified_count(), 1)
   expect_failure(expect_equal(store$data[3, "DURDIS"], original_snapshot[3, "DURDIS"]))
-  expect_equal(store$data[1, "AGE"], original_snapshot[1, "AGE"])  # Row 1 unmodified
+  expect_equal(store$data[1, "AGE"], original_snapshot[1, "AGE"]) # Row 1 unmodified
 })
 
 test_that("summary returns correct structure when data loaded", {

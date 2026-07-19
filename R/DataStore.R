@@ -53,32 +53,39 @@ DataStore <- R6::R6Class(
     #' }
     #'
     initialize = function() {
-      tryCatch({
+      tryCatch(
+        {
+          db_config <- get_golem_config("database")
+          schema_config <- get_golem_config("schema")
+          private$db_path <- validate_db_path(
+            subdir = db_config$path,
+            filename = db_config$name
+          )
+          self$con <- establish_duckdb_connection(private$db_path, read_only = FALSE)
+          query_result <- load_data(self$con, table = "adsl", schema = schema_config)
+          self$original <- data.frame(query_result, check.names = TRUE)
+          self$data <- data.frame(query_result, check.names = TRUE)
+          private$modified_cells <- 0
 
-        db_config <- get_golem_config("database")
-        schema_config <- get_golem_config("schema")
-        private$db_path <- validate_db_path(subdir = db_config$path,
-                                            filename = db_config$name)
-        self$con <- establish_duckdb_connection(private$db_path, read_only = FALSE)
-        query_result <- load_data(self$con, table = "adsl", schema = schema_config)
-        self$original <- data.frame(query_result, check.names = TRUE)
-        self$data <- data.frame(query_result, check.names = TRUE)
-        private$modified_cells <- 0
+          cli::cli_inform("DataStore initialized: {nrow(self$data)} rows loaded from DuckDB")
+        },
+        error = function(e) {
+          # Cleanup on failure: disconnect + unlink temp file
+          if (!is.null(self$con)) {
+            tryCatch(
+              {
+                DBI::dbDisconnect(self$con, shutdown = TRUE)
+              },
+              error = function(x) NULL
+            )
+          }
 
-        cli::cli_inform("DataStore initialized: {nrow(self$data)} rows loaded from DuckDB")
-      }, error = function(e) {
-        # Cleanup on failure: disconnect + unlink temp file
-        if (!is.null(self$con)) {
-          tryCatch({
-            DBI::dbDisconnect(self$con, shutdown = TRUE)
-          }, error = function(x) NULL)
+          cli::cli_abort(c(
+            "DataStore initialization failed",
+            "x" = "{conditionMessage(e)}"
+          ))
         }
-
-        cli::cli_abort(c(
-          "DataStore initialization failed",
-          "x" = "{conditionMessage(e)}"
-        ))
-      })
+      )
 
       invisible(self)
     },
@@ -94,27 +101,33 @@ DataStore <- R6::R6Class(
     #' store$revert()
     #' }
     revert = function() {
-      tryCatch({
-        checkmate::assert_data_frame(self$original, null.ok = FALSE)
+      tryCatch(
+        {
+          checkmate::assert_data_frame(self$original, null.ok = FALSE)
 
-        reverted_data <- tryCatch({
-          data.frame(self$original, check.names = FALSE)
-        }, error = function(e) {
-          cli::cli_abort(c(
-            "Failed to revert data",
-            "x" = "Error during deep copy: {conditionMessage(e)}"
-          ))
-        })
+          reverted_data <- tryCatch(
+            {
+              data.frame(self$original, check.names = FALSE)
+            },
+            error = function(e) {
+              cli::cli_abort(c(
+                "Failed to revert data",
+                "x" = "Error during deep copy: {conditionMessage(e)}"
+              ))
+            }
+          )
 
-        self$data <- reverted_data
-        private$modified_cells <- 0
-        private$.summary_cache <- NULL  # Invalidate cache on revert
+          self$data <- reverted_data
+          private$modified_cells <- 0
+          private$.summary_cache <- NULL # Invalidate cache on revert
 
-        cli::cli_inform("Data reverted to original state ({nrow(self$data)} rows)")
-        invisible(self)
-      }, error = function(e) {
-        cli::cli_abort(c("Revert operation failed", "x" = "{conditionMessage(e)}"))
-      })
+          cli::cli_inform("Data reverted to original state ({nrow(self$data)} rows)")
+          invisible(self)
+        },
+        error = function(e) {
+          cli::cli_abort(c("Revert operation failed", "x" = "{conditionMessage(e)}"))
+        }
+      )
     },
     #' @description
     #' Returns human-readable summary for UI display with validation and error handling.
@@ -128,49 +141,54 @@ DataStore <- R6::R6Class(
     #' store$summary()
     #' }
     summary = function() {
-      tryCatch({
-        if (!is.null(private$.summary_cache) && private$modified_cells == 0) {
-          return(private$.summary_cache)
-        }
+      tryCatch(
+        {
+          if (!is.null(private$.summary_cache) && private$modified_cells == 0) {
+            return(private$.summary_cache)
+          }
 
-        validate_summary_data(self$data)
+          validate_summary_data(self$data)
 
-        numeric_cols <- detect_numeric_columns(self$data)
-        numeric_means <- NULL
-        if (length(numeric_cols) > 0) {
-          numeric_means <- sapply(numeric_cols, function(col) {
-            cache_key <- paste0(col, "_mean")
-            if (!is.null(private$.column_cache[[cache_key]])) {
-              return(private$.column_cache[[cache_key]])
-            }
-            col_mean <- suppressWarnings(mean(as.numeric(self$data[[col]]), na.rm = TRUE))
-            private$.column_cache[[cache_key]] <<- col_mean
-            col_mean
-          }, USE.NAMES = TRUE)
-        }
-        if (is.null(private$.column_cache$row_count)) {
-          private$.column_cache$row_count <<- nrow(self$data)
-        }
-        if (is.null(private$.column_cache$col_count)) {
-          private$.column_cache$col_count <<- ncol(self$data)
-        }
+          numeric_cols <- detect_numeric_columns(self$data)
+          numeric_means <- NULL
+          if (length(numeric_cols) > 0) {
+            numeric_means <- sapply(numeric_cols, function(col) {
+              cache_key <- paste0(col, "_mean")
+              if (!is.null(private$.column_cache[[cache_key]])) {
+                return(private$.column_cache[[cache_key]])
+              }
+              col_mean <- suppressWarnings(mean(as.numeric(self$data[[col]]), na.rm = TRUE))
+              private$.column_cache[[cache_key]] <<- col_mean
+              col_mean
+            }, USE.NAMES = TRUE)
+          }
+          if (is.null(private$.column_cache$row_count)) {
+            private$.column_cache$row_count <<- nrow(self$data)
+          }
+          if (is.null(private$.column_cache$col_count)) {
+            private$.column_cache$col_count <<- ncol(self$data)
+          }
 
-        summary_list <- list(
-          message = sprintf("Rows: %d | Columns: %d",
-                           private$.column_cache$row_count,
-                           private$.column_cache$col_count),
-          rows = private$.column_cache$row_count,
-          cols = private$.column_cache$col_count,
-          numeric_means = numeric_means
-        )
-        private$.summary_cache <<- summary_list
-        summary_list
-      }, error = function(e) {
-        cli::cli_abort(c(
-          "Failed to generate summary",
-          "x" = "{conditionMessage(e)}"
-        ))
-      })
+          summary_list <- list(
+            message = sprintf(
+              "Rows: %d | Columns: %d",
+              private$.column_cache$row_count,
+              private$.column_cache$col_count
+            ),
+            rows = private$.column_cache$row_count,
+            cols = private$.column_cache$col_count,
+            numeric_means = numeric_means
+          )
+          private$.summary_cache <<- summary_list
+          summary_list
+        },
+        error = function(e) {
+          cli::cli_abort(c(
+            "Failed to generate summary",
+            "x" = "{conditionMessage(e)}"
+          ))
+        }
+      )
     },
     #' @description
     #' Type-safe cell update with validation. Ensures data type consistency
@@ -235,27 +253,29 @@ DataStore <- R6::R6Class(
     #' store$save()
     #' }
     save = function() {
-      tryCatch({
-        validate_save_connection(self$con)
+      tryCatch(
+        {
+          validate_save_connection(self$con)
 
-        validate_save_data(self$data)
-        validate_save_structure(self$data, self$original)
-        delete_mtcars_table(self$con)
+          validate_save_data(self$data)
+          validate_save_structure(self$data, self$original)
+          delete_mtcars_table(self$con)
 
-        write_mtcars_to_db(self$con, self$data)
-        self$original <- data.frame(self$data, check.names = FALSE)
+          write_mtcars_to_db(self$con, self$data)
+          self$original <- data.frame(self$data, check.names = FALSE)
 
-        private$modified_cells <- 0
+          private$modified_cells <- 0
 
-        cli::cli_inform("Data saved to DuckDB: {nrow(self$data)} rows saved successfully")
-        invisible(self)
-      }, error = function(e) {
-        cli::cli_abort(c(
-          "Save operation failed",
-          "x" = "{conditionMessage(e)}"
-        ))
-      })
-
+          cli::cli_inform("Data saved to DuckDB: {nrow(self$data)} rows saved successfully")
+          invisible(self)
+        },
+        error = function(e) {
+          cli::cli_abort(c(
+            "Save operation failed",
+            "x" = "{conditionMessage(e)}"
+          ))
+        }
+      )
     },
     #' @description
     #' Returns the number of cells that have been modified since last save/revert.
@@ -269,7 +289,6 @@ DataStore <- R6::R6Class(
       private$modified_cells
     }
   ),
-
   private = list(
     db_path = NULL,
     modified_cells = 0,
@@ -278,14 +297,16 @@ DataStore <- R6::R6Class(
     finalize = function() {
       # Disconnect from DuckDB
       if (!is.null(self$con)) {
-        tryCatch({
-          DBI::dbDisconnect(self$con, shutdown = TRUE)
-          cli::cli_inform("DuckDB connection closed")
-        }, error = function(e) {
-          cli::cli_warn("Error closing DuckDB connection: {conditionMessage(e)}")
-        })
+        tryCatch(
+          {
+            DBI::dbDisconnect(self$con, shutdown = TRUE)
+            cli::cli_inform("DuckDB connection closed")
+          },
+          error = function(e) {
+            cli::cli_warn("Error closing DuckDB connection: {conditionMessage(e)}")
+          }
+        )
       }
-
     }
   )
 )

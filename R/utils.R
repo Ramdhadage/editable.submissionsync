@@ -21,24 +21,26 @@
 validate_db_path <- function(package = "editable.submissionsync",
                              subdir = "extdata",
                              filename = "mtcars") {
-  tryCatch({
-    # Resolve path from package installation
-    db_path <- system.file(subdir, paste0(filename,".duckdb") , package = package)
+  tryCatch(
+    {
+      # Resolve path from package installation
+      db_path <- system.file(subdir, paste0(filename, ".duckdb"), package = package)
 
-    # Validation: Check if path is non-empty and file exists
-    checkmate::assert_file_exists(db_path, access = "r")
+      # Validation: Check if path is non-empty and file exists
+      checkmate::assert_file_exists(db_path, access = "r")
 
-    db_path
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "DuckDB bundle file not found",
-      "i" = "Package: {package}",
-      "i" = "Expected location: {package}/inst/{subdir}/{filename}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
+      db_path
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "DuckDB bundle file not found",
+        "i" = "Package: {package}",
+        "i" = "Expected location: {package}/inst/{subdir}/{filename}",
+        "x" = "Error: {conditionMessage(e)}"
+      ))
+    }
+  )
 }
-
 
 
 #' Resolve a deployable DuckDB path
@@ -55,41 +57,44 @@ validate_db_path <- function(package = "editable.submissionsync",
 #' @return Character. A path to a readable DuckDB database file.
 #' @keywords internal
 resolve_duckdb_path <- function(db_path, read_only = FALSE) {
-  tryCatch({
-    checkmate::assert_character(db_path, len = 1, min.chars = 1)
+  tryCatch(
+    {
+      checkmate::assert_character(db_path, len = 1, min.chars = 1)
 
-    if (!file.exists(db_path)) {
+      if (!file.exists(db_path)) {
+        cli::cli_abort(c(
+          "DuckDB file not found",
+          "i" = "Path: {db_path}"
+        ))
+      }
+
+      if (read_only) {
+        return(normalizePath(db_path, winslash = "/", mustWork = TRUE))
+      }
+
+      db_dir <- dirname(db_path)
+      if (dir.exists(db_dir) && file.access(db_dir, 2) == 0) {
+        return(normalizePath(db_path, winslash = "/", mustWork = TRUE))
+      }
+
+      target_dir <- file.path(tempdir(), "editable.submissionsync")
+      dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+
+      target_path <- file.path(target_dir, basename(db_path))
+      if (!file.exists(target_path) || file.info(target_path)$size != file.info(db_path)$size) {
+        file.copy(db_path, target_path, overwrite = TRUE)
+      }
+
+      normalizePath(target_path, winslash = "/", mustWork = TRUE)
+    },
+    error = function(e) {
       cli::cli_abort(c(
-        "DuckDB file not found",
-        "i" = "Path: {db_path}"
+        "Failed to resolve DuckDB path",
+        "i" = "Source path: {db_path}",
+        "x" = "Error: {conditionMessage(e)}"
       ))
     }
-
-    if (read_only) {
-      return(normalizePath(db_path, winslash = "/", mustWork = TRUE))
-    }
-
-    db_dir <- dirname(db_path)
-    if (dir.exists(db_dir) && file.access(db_dir, 2) == 0) {
-      return(normalizePath(db_path, winslash = "/", mustWork = TRUE))
-    }
-
-    target_dir <- file.path(tempdir(), "editable.submissionsync")
-    dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
-
-    target_path <- file.path(target_dir, basename(db_path))
-    if (!file.exists(target_path) || file.info(target_path)$size != file.info(db_path)$size) {
-      file.copy(db_path, target_path, overwrite = TRUE)
-    }
-
-    normalizePath(target_path, winslash = "/", mustWork = TRUE)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Failed to resolve DuckDB path",
-      "i" = "Source path: {db_path}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
+  )
 }
 
 #' Establish DuckDB Connection
@@ -111,34 +116,37 @@ resolve_duckdb_path <- function(db_path, read_only = FALSE) {
 #' }
 #' @keywords internal
 establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
-  tryCatch({
-    resolved_db <- resolve_duckdb_path(temp_db, read_only = read_only)
-    db_dir <- dirname(resolved_db)
+  tryCatch(
+    {
+      resolved_db <- resolve_duckdb_path(temp_db, read_only = read_only)
+      db_dir <- dirname(resolved_db)
 
-    if (!dir.exists(db_dir)) {
-      dir.create(db_dir, recursive = TRUE, showWarnings = FALSE)
+      if (!dir.exists(db_dir)) {
+        dir.create(db_dir, recursive = TRUE, showWarnings = FALSE)
+      }
+
+      if (!read_only && file.access(resolved_db, 2) != 0 && file.access(db_dir, 2) != 0) {
+        cli::cli_abort("Resolved DuckDB path is not writable")
+      }
+
+      con <- DBI::dbConnect(
+        duckdb::duckdb(),
+        dbdir = resolved_db,
+        read_only = read_only
+      )
+
+      con
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Failed to establish DuckDB connection",
+        "i" = "Database path: {temp_db}",
+        "i" = "Resolved path: {if (exists('resolved_db')) resolved_db else temp_db}",
+        "i" = "Read-only mode: {read_only}",
+        "x" = "Error: {conditionMessage(e)}"
+      ))
     }
-
-    if (!read_only && file.access(resolved_db, 2) != 0 && file.access(db_dir, 2) != 0) {
-      cli::cli_abort("Resolved DuckDB path is not writable")
-    }
-
-    con <- DBI::dbConnect(
-      duckdb::duckdb(),
-      dbdir = resolved_db,
-      read_only = read_only
-    )
-
-    con
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Failed to establish DuckDB connection",
-      "i" = "Database path: {temp_db}",
-      "i" = "Resolved path: {if (exists('resolved_db')) resolved_db else temp_db}",
-      "i" = "Read-only mode: {read_only}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
+  )
 }
 
 #' Load Data from DuckDB Table
@@ -161,21 +169,24 @@ establish_duckdb_connection <- function(temp_db, read_only = FALSE) {
 #' }
 #' @keywords internal
 load_data <- function(con, table = "adsl", default_rownames = NULL, schema = NULL) {
-  tryCatch({
-    # Read table with type preservation
-    result <-  DBI::dbReadTable(con, table)
-    result <- set_column_type(result, schema)
-    return(result)
-  }, error = function(e) {
-    cli::cli_warn(c(
-      "Failed to load table from DuckDB, initializing with empty dataset",
-      "i" = "Table: {table}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
+  tryCatch(
+    {
+      # Read table with type preservation
+      result <- DBI::dbReadTable(con, table)
+      result <- set_column_type(result, schema)
+      return(result)
+    },
+    error = function(e) {
+      cli::cli_warn(c(
+        "Failed to load table from DuckDB, initializing with empty dataset",
+        "i" = "Table: {table}",
+        "x" = "Error: {conditionMessage(e)}"
+      ))
 
-    # Return empty data.frame instead of aborting (graceful degradation)
-    data.frame()
-  })
+      # Return empty data.frame instead of aborting (graceful degradation)
+      data.frame()
+    }
+  )
 }
 #' Apply Column Type Schema to Data Frame
 #'
@@ -227,47 +238,53 @@ load_data <- function(con, table = "adsl", default_rownames = NULL, schema = NUL
 #' @keywords internal
 #' @importFrom cli cli_abort cli_warn
 set_column_type <- function(data, schema = NULL) {
-    checkmate::assert_data_frame(data, null.ok = FALSE)
-    checkmate::assert_list(schema, null.ok = FALSE, min.len = 1)
+  checkmate::assert_data_frame(data, null.ok = FALSE)
+  checkmate::assert_list(schema, null.ok = FALSE, min.len = 1)
   coerce_single_column <- function(col_data, target_type, col_name, original_data) {
-    tryCatch({
-      # Apply type coercion
-      coerced <- suppressWarnings({
-        switch(target_type,
-          "numeric" = as.numeric(col_data),
-          "integer" = as.integer(col_data),
-          "character" = as.character(col_data),
-          "logical" = as.logical(col_data),
-          "Date" = as.Date(col_data),
-          "factor" = factor(col_data, levels = unique(col_data)),
-          as(col_data, target_type)
-        )
-      })
+    tryCatch(
+      {
+        # Apply type coercion
+        coerced <- suppressWarnings({
+          switch(target_type,
+            "numeric" = as.numeric(col_data),
+            "integer" = as.integer(col_data),
+            "character" = as.character(col_data),
+            "logical" = as.logical(col_data),
+            "Date" = as.Date(col_data),
+            "factor" = factor(col_data, levels = unique(col_data)),
+            as(col_data, target_type)
+          )
+        })
 
-      coerced
-    }, error = function(e) {
-      cli::cli_abort(c(
-        "Type coercion failed for column",
-        "i" = "Column: {col_name}",
-        "i" = "Target type: {target_type}",
-        "i" = "Current class: {paste(class(col_data), collapse = ', ')}",
-        "x" = "Coercion error: {conditionMessage(e)}"
-      ))
-    })
+        coerced
+      },
+      error = function(e) {
+        cli::cli_abort(c(
+          "Type coercion failed for column",
+          "i" = "Column: {col_name}",
+          "i" = "Target type: {target_type}",
+          "i" = "Current class: {paste(class(col_data), collapse = ', ')}",
+          "x" = "Coercion error: {conditionMessage(e)}"
+        ))
+      }
+    )
   }
   for (col_name in names(data)) {
     if (col_name %in% names(schema)) {
       target_type <- schema[[col_name]]$type
 
-      tryCatch({
-        checkmate::assert_character(target_type, len = 1)
-      }, error = function(e) {
-        cli::cli_abort(c(
-          "Schema type must be a single string",
-          "i" = "Column: {col_name}",
-          "x" = "{conditionMessage(e)}"
-        ))
-      })
+      tryCatch(
+        {
+          checkmate::assert_character(target_type, len = 1)
+        },
+        error = function(e) {
+          cli::cli_abort(c(
+            "Schema type must be a single string",
+            "i" = "Column: {col_name}",
+            "x" = "{conditionMessage(e)}"
+          ))
+        }
+      )
       data[[col_name]] <- coerce_single_column(
         data[[col_name]],
         target_type,
@@ -278,7 +295,6 @@ set_column_type <- function(data, schema = NULL) {
   }
   invisible(data)
 }
-
 
 
 #' Validate Data Frame Exists and Is Valid
@@ -297,16 +313,19 @@ set_column_type <- function(data, schema = NULL) {
 #' }
 #' @keywords internal
 validate_data <- function(data) {
-  tryCatch({
-    checkmate::assert_data_frame(data, null.ok = FALSE)
-    invisible(NULL)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "No data loaded or invalid data structure",
-      "x" = "Expected: data.frame object",
-      "i" = "Error: {conditionMessage(e)}"
-    ))
-  })
+  tryCatch(
+    {
+      checkmate::assert_data_frame(data, null.ok = FALSE)
+      invisible(NULL)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "No data loaded or invalid data structure",
+        "x" = "Expected: data.frame object",
+        "i" = "Error: {conditionMessage(e)}"
+      ))
+    }
+  )
 }
 
 #' Validate Row Index
@@ -326,24 +345,27 @@ validate_data <- function(data) {
 #' }
 #' @keywords internal
 validate_row <- function(row, data) {
-  tryCatch({
-    # Validate is integer-like
-    checkmate::assert_integerish(row, len = 1, null.ok = FALSE)
+  tryCatch(
+    {
+      # Validate is integer-like
+      checkmate::assert_integerish(row, len = 1, null.ok = FALSE)
 
-    # Validate bounds
-    if (row < 1 || row > nrow(data)) {
-      stop("Row index out of bounds")
+      # Validate bounds
+      if (row < 1 || row > nrow(data)) {
+        stop("Row index out of bounds")
+      }
+
+      invisible(NULL)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Invalid row index",
+        "i" = "Row: {row}",
+        "i" = "Valid range: 1-{nrow(data)}",
+        "x" = "Error: {conditionMessage(e)}"
+      ))
     }
-
-    invisible(NULL)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Invalid row index",
-      "i" = "Row: {row}",
-      "i" = "Valid range: 1-{nrow(data)}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
+  )
 }
 
 #' Validate and Normalize Column Identifier
@@ -361,44 +383,47 @@ validate_row <- function(row, data) {
 #' @examples
 #' \dontrun{
 #' validate_column("mpg", mtcars)
-#' validate_column(1, mtcars)  # Returns "mpg"
+#' validate_column(1, mtcars) # Returns "mpg"
 #' }
 #' @keywords internal
 validate_column <- function(col, data) {
-  tryCatch({
-    # If numeric: validate bounds and convert to name
-    if (is.numeric(col)) {
-      checkmate::assert_integerish(col, len = 1, null.ok = FALSE)
+  tryCatch(
+    {
+      # If numeric: validate bounds and convert to name
+      if (is.numeric(col)) {
+        checkmate::assert_integerish(col, len = 1, null.ok = FALSE)
 
-      if (col < 1 || col > ncol(data)) {
-        stop("Column index out of bounds")
+        if (col < 1 || col > ncol(data)) {
+          stop("Column index out of bounds")
+        }
+
+        col_name <- names(data)[col]
+      } else {
+        # If character: validate existence
+        col_name <- as.character(col)
+        checkmate::assert_choice(col_name, choices = names(data))
       }
 
-      col_name <- names(data)[col]
-    } else {
-      # If character: validate existence
-      col_name <- as.character(col)
-      checkmate::assert_choice(col_name, choices = names(data))
+      col_name
+    },
+    error = function(e) {
+      if (is.numeric(col)) {
+        cli::cli_abort(c(
+          "Invalid column index",
+          "i" = "Index: {col}",
+          "i" = "Valid range: 1-{ncol(data)}",
+          "x" = "Error: {conditionMessage(e)}"
+        ))
+      } else {
+        cli::cli_abort(c(
+          "Column not found in dataset",
+          "i" = "Requested column: {col}",
+          "i" = "Available columns: {paste(names(data), collapse = ', ')}",
+          "x" = "Error: {conditionMessage(e)}"
+        ))
+      }
     }
-
-    col_name
-  }, error = function(e) {
-    if (is.numeric(col)) {
-      cli::cli_abort(c(
-        "Invalid column index",
-        "i" = "Index: {col}",
-        "i" = "Valid range: 1-{ncol(data)}",
-        "x" = "Error: {conditionMessage(e)}"
-      ))
-    } else {
-      cli::cli_abort(c(
-        "Column not found in dataset",
-        "i" = "Requested column: {col}",
-        "i" = "Available columns: {paste(names(data), collapse = ', ')}",
-        "x" = "Error: {conditionMessage(e)}"
-      ))
-    }
-  })
+  )
 }
 
 #' Coerce Value to Column Type
@@ -421,32 +446,35 @@ validate_column <- function(col, data) {
 #' @importFrom methods as
 #' @keywords internal
 coerce_value <- function(value, col_name, original_data) {
-  tryCatch({
-    # Get expected type from original data
-    original_type <- class(original_data[[col_name]])[1]
+  tryCatch(
+    {
+      # Get expected type from original data
+      original_type <- class(original_data[[col_name]])[1]
 
-    # Coerce with type-specific handling
-    coerced <- suppressWarnings({
-      switch(original_type,
-             "numeric" = as.numeric(value),
-             "integer" = as.integer(value),
-             "character" = as.character(value),
-             "logical" = as.logical(value),
-             "Date" = as.Date(value),
-             "factor" = factor(value, levels = levels(original_data[[col_name]])),
-             as(value, original_type)
-      )
-    })
-    coerced
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Type coercion failed",
-      "i" = "Column: {col_name}",
-      "i" = "Value: {value}",
-      "i" = "Expected type: {class(original_data[[col_name]])[1]}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
+      # Coerce with type-specific handling
+      coerced <- suppressWarnings({
+        switch(original_type,
+          "numeric" = as.numeric(value),
+          "integer" = as.integer(value),
+          "character" = as.character(value),
+          "logical" = as.logical(value),
+          "Date" = as.Date(value),
+          "factor" = factor(value, levels = levels(original_data[[col_name]])),
+          as(value, original_type)
+        )
+      })
+      coerced
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Type coercion failed",
+        "i" = "Column: {col_name}",
+        "i" = "Value: {value}",
+        "i" = "Expected type: {class(original_data[[col_name]])[1]}",
+        "x" = "Error: {conditionMessage(e)}"
+      ))
+    }
+  )
 }
 
 #' Validate No Data Loss from Type Coercion
@@ -468,22 +496,25 @@ coerce_value <- function(value, col_name, original_data) {
 #' }
 #' @keywords internal
 validate_no_na_loss <- function(coerced_value, original_value, col_name) {
-  tryCatch({
-    # Check for unwanted NA introduction (data loss)
-    if (is.na(coerced_value) && !is.na(original_value)) {
-      stop("Type coercion resulted in NA")
-    }
+  tryCatch(
+    {
+      # Check for unwanted NA introduction (data loss)
+      if (is.na(coerced_value) && !is.na(original_value)) {
+        stop("Type coercion resulted in NA")
+      }
 
-    invisible(TRUE)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Type coercion resulted in data loss",
-      "i" = "Column: {col_name}",
-      "i" = "Original value: {original_value}",
-      "i" = "Coerced value: {coerced_value}",
-      "x" = "Cannot convert {original_value} to valid value for column {col_name}"
-    ))
-  })
+      invisible(TRUE)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Type coercion resulted in data loss",
+        "i" = "Column: {col_name}",
+        "i" = "Original value: {original_value}",
+        "i" = "Coerced value: {coerced_value}",
+        "x" = "Cannot convert {original_value} to valid value for column {col_name}"
+      ))
+    }
+  )
 }
 #' Validate Summary Data
 #'
@@ -497,20 +528,23 @@ validate_no_na_loss <- function(coerced_value, original_value, col_name) {
 #'
 #' @examples
 #' \dontrun{
-#' validate_summary_data(mtcars)  # Passes
-#' validate_summary_data(NULL)    # Throws cli_abort
+#' validate_summary_data(mtcars) # Passes
+#' validate_summary_data(NULL) # Throws cli_abort
 #' }
 #' @keywords internal
 validate_summary_data <- function(data) {
-  tryCatch({
-    checkmate::assert_data_frame(data, null.ok = FALSE, min.rows = 1)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Invalid data for summary",
-      "x" = "Data must be a non-empty data.frame",
-      "i" = "Error: {conditionMessage(e)}"
-    ))
-  })
+  tryCatch(
+    {
+      checkmate::assert_data_frame(data, null.ok = FALSE, min.rows = 1)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Invalid data for summary",
+        "x" = "Data must be a non-empty data.frame",
+        "i" = "Error: {conditionMessage(e)}"
+      ))
+    }
+  )
   invisible(NULL)
 }
 
@@ -532,16 +566,19 @@ validate_summary_data <- function(data) {
 #' }
 #' @keywords internal
 detect_numeric_columns <- function(data) {
-  tryCatch({
-    # Safely detect numeric columns with sapply
-    is_numeric <- sapply(data, is.numeric, simplify = TRUE, USE.NAMES = TRUE)
-    # Return column names where is.numeric is TRUE
-    names(is_numeric)[is_numeric]
-  }, error = function(e) {
-    # Graceful degradation: log warning and return empty vector
-    cli::cli_warn("Failed to detect numeric columns: {conditionMessage(e)}")
-    character(0)
-  })
+  tryCatch(
+    {
+      # Safely detect numeric columns with sapply
+      is_numeric <- sapply(data, is.numeric, simplify = TRUE, USE.NAMES = TRUE)
+      # Return column names where is.numeric is TRUE
+      names(is_numeric)[is_numeric]
+    },
+    error = function(e) {
+      # Graceful degradation: log warning and return empty vector
+      cli::cli_warn("Failed to detect numeric columns: {conditionMessage(e)}")
+      character(0)
+    }
+  )
 }
 
 #' Calculate Column Means
@@ -563,21 +600,24 @@ detect_numeric_columns <- function(data) {
 #' }
 #' @keywords internal
 calculate_column_means <- function(data, numeric_cols) {
-  tryCatch({
-    # Verify numeric_cols is non-empty
-    if (length(numeric_cols) == 0) {
-      return(NULL)
-    }
+  tryCatch(
+    {
+      # Verify numeric_cols is non-empty
+      if (length(numeric_cols) == 0) {
+        return(NULL)
+      }
 
-    # Calculate means with NA removal
-    colMeans(data[, numeric_cols, drop = FALSE], na.rm = TRUE)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Failed to calculate column means",
-      "i" = "Columns: {paste(numeric_cols, collapse = ', ')}",
-      "x" = "Error: {conditionMessage(e)}"
-    ))
-  })
+      # Calculate means with NA removal
+      colMeans(data[, numeric_cols, drop = FALSE], na.rm = TRUE)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Failed to calculate column means",
+        "i" = "Columns: {paste(numeric_cols, collapse = ', ')}",
+        "x" = "Error: {conditionMessage(e)}"
+      ))
+    }
+  )
 }
 
 #' Validate Save Connection
@@ -592,28 +632,31 @@ calculate_column_means <- function(data, numeric_cols) {
 #'
 #' @examples
 #' \dontrun{
-#' validate_save_connection(con)  # Passes if valid
+#' validate_save_connection(con) # Passes if valid
 #' validate_save_connection(NULL) # Throws cli_abort
 #' }
 #' @keywords internal
 validate_save_connection <- function(con) {
-  tryCatch({
-    # Check if connection exists and is valid DBI connection
-    if (is.null(con)) {
-      stop("Connection is NULL")
+  tryCatch(
+    {
+      # Check if connection exists and is valid DBI connection
+      if (is.null(con)) {
+        stop("Connection is NULL")
+      }
+      if (!inherits(con, "DBIConnection")) {
+        stop("Not a valid DBI connection object")
+      }
+      if (!DBI::dbIsValid(con)) {
+        stop("Connection is not valid (closed or broken)")
+      }
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Invalid database connection for save",
+        "x" = "{conditionMessage(e)}"
+      ))
     }
-    if (!inherits(con, "DBIConnection")) {
-      stop("Not a valid DBI connection object")
-    }
-    if (!DBI::dbIsValid(con)) {
-      stop("Connection is not valid (closed or broken)")
-    }
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Invalid database connection for save",
-      "x" = "{conditionMessage(e)}"
-    ))
-  })
+  )
   invisible(NULL)
 }
 
@@ -629,20 +672,23 @@ validate_save_connection <- function(con) {
 #'
 #' @examples
 #' \dontrun{
-#' validate_save_data(mtcars)  # Passes
-#' validate_save_data(NULL)    # Throws cli_abort
+#' validate_save_data(mtcars) # Passes
+#' validate_save_data(NULL) # Throws cli_abort
 #' }
 #' @keywords internal
 validate_save_data <- function(data) {
-  tryCatch({
-    checkmate::assert_data_frame(data, null.ok = FALSE, min.rows = 1)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Invalid data for save operation",
-      "x" = "Data must be a non-empty data.frame",
-      "i" = "Error: {conditionMessage(e)}"
-    ))
-  })
+  tryCatch(
+    {
+      checkmate::assert_data_frame(data, null.ok = FALSE, min.rows = 1)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Invalid data for save operation",
+        "x" = "Data must be a non-empty data.frame",
+        "i" = "Error: {conditionMessage(e)}"
+      ))
+    }
+  )
   invisible(NULL)
 }
 
@@ -660,46 +706,51 @@ validate_save_data <- function(data) {
 #'
 #' @keywords internal
 validate_save_structure <- function(data, original) {
-  tryCatch({
-    # Validation 1: Check column structure (names and count)
-    current_cols <- names(data)
-    original_cols <- names(original)
+  tryCatch(
+    {
+      # Validation 1: Check column structure (names and count)
+      current_cols <- names(data)
+      original_cols <- names(original)
 
-    if (!identical(current_cols, original_cols)) {
-      missing_cols <- setdiff(original_cols, current_cols)
-      extra_cols <- setdiff(current_cols, original_cols)
+      if (!identical(current_cols, original_cols)) {
+        missing_cols <- setdiff(original_cols, current_cols)
+        extra_cols <- setdiff(current_cols, original_cols)
 
-      error_msg <- character(0)
-      if (length(missing_cols) > 0) {
-        error_msg <- c(error_msg, paste("Missing columns:", paste(missing_cols, collapse = ", ")))
+        error_msg <- character(0)
+        if (length(missing_cols) > 0) {
+          error_msg <- c(error_msg, paste("Missing columns:", paste(missing_cols, collapse = ", ")))
+        }
+        if (length(extra_cols) > 0) {
+          error_msg <- c(error_msg, paste("Extra columns:", paste(extra_cols, collapse = ", ")))
+        }
+
+        stop(paste(error_msg, collapse = "; "))
       }
-      if (length(extra_cols) > 0) {
-        error_msg <- c(error_msg, paste("Extra columns:", paste(extra_cols, collapse = ", ")))
+
+      # Validation 2: Check row count (data integrity)
+      current_rows <- nrow(data)
+      original_rows <- nrow(original)
+
+      if (current_rows != original_rows) {
+        stop(sprintf(
+          "Row count mismatch: expected %d rows, found %d rows",
+          original_rows, current_rows
+        ))
       }
 
-      stop(paste(error_msg, collapse = "; "))
+      invisible(NULL)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Data structure does not match original",
+        "x" = "{conditionMessage(e)}",
+        "i" = "Original: {nrow(original)} rows x {ncol(original)} columns",
+        "i" = "Current: {nrow(data)} rows x {ncol(data)} columns",
+        "i" = "Original columns: {paste(names(original), collapse = ', ')}",
+        "i" = "Current columns: {paste(names(data), collapse = ', ')}"
+      ))
     }
-
-    # Validation 2: Check row count (data integrity)
-    current_rows <- nrow(data)
-    original_rows <- nrow(original)
-
-    if (current_rows != original_rows) {
-      stop(sprintf("Row count mismatch: expected %d rows, found %d rows",
-                   original_rows, current_rows))
-    }
-
-    invisible(NULL)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Data structure does not match original",
-      "x" = "{conditionMessage(e)}",
-      "i" = "Original: {nrow(original)} rows x {ncol(original)} columns",
-      "i" = "Current: {nrow(data)} rows x {ncol(data)} columns",
-      "i" = "Original columns: {paste(names(original), collapse = ', ')}",
-      "i" = "Current columns: {paste(names(data), collapse = ', ')}"
-    ))
-  })
+  )
 }
 
 
@@ -720,16 +771,19 @@ validate_save_structure <- function(data, original) {
 #' }
 #' @keywords internal
 delete_mtcars_table <- function(con) {
-  tryCatch({
-    # DROP TABLE IF EXISTS is safe - no error if table doesn't exist
-    DBI::dbExecute(con, "DROP TABLE IF EXISTS adsl")
-    invisible(NULL)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Failed to delete existing mtcars table",
-      "x" = "Database error: {conditionMessage(e)}"
-    ))
-  })
+  tryCatch(
+    {
+      # DROP TABLE IF EXISTS is safe - no error if table doesn't exist
+      DBI::dbExecute(con, "DROP TABLE IF EXISTS adsl")
+      invisible(NULL)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Failed to delete existing mtcars table",
+        "x" = "Database error: {conditionMessage(e)}"
+      ))
+    }
+  )
 }
 
 #' Write mtcars Data to DuckDB
@@ -749,17 +803,20 @@ delete_mtcars_table <- function(con) {
 #' }
 #' @keywords internal
 write_mtcars_to_db <- function(con, data) {
-  tryCatch({
-    DBI::dbWriteTable(con, "adsl", data, overwrite = TRUE)
-    invisible(NULL)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Failed to write data to DuckDB",
-      "i" = "Rows: {nrow(data)}",
-      "i" = "Columns: {ncol(data)}",
-      "x" = "Database error: {conditionMessage(e)}"
-    ))
-  })
+  tryCatch(
+    {
+      DBI::dbWriteTable(con, "adsl", data, overwrite = TRUE)
+      invisible(NULL)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Failed to write data to DuckDB",
+        "i" = "Rows: {nrow(data)}",
+        "i" = "Columns: {ncol(data)}",
+        "x" = "Database error: {conditionMessage(e)}"
+      ))
+    }
+  )
 }
 
 #' Clean ANSI Escape Codes from Error Messages
@@ -811,7 +868,7 @@ get_cached_store <- function() {
 #' @keywords internal
 withCustomSpinner <- function(ui_element, min_height = "200px") {
   spinner_url <- "https://github.com/Ramdhadage/editable.submissionsync/blob/main/inst/app/www/custom.gif?raw=true"
-  
+
   div(
     class = "custom-spinner-container",
     style = sprintf("min-height: %s;", min_height),

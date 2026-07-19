@@ -20,10 +20,10 @@
 #' @format A data.frame with one row per user.
 #' @noRd
 credentials <- data.frame(
-  user     = c("admin", "editor", "reviewer", "viewer"),
+  user = c("admin", "editor", "reviewer", "viewer"),
   password = c("Admin@123", "Editor@123", "Reviewer@123", "Viewer@123"),
-  start    = as.Date(NA),
-  expire   = as.Date(NA),
-  admin    = c(TRUE, FALSE, FALSE, FALSE),
+  start = as.Date(NA),
+  expire = as.Date(NA),
+  admin = c(TRUE, FALSE, FALSE, FALSE),
   stringsAsFactors = FALSE
 )

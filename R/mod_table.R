@@ -23,27 +23,27 @@ mod_table_ui <- function(id) {
     golem_add_external_resources(),
     div(
       class = "action-buttons mb-3 save-revert-buttons",
-      bslib::tooltip(actionButton(
-        ns("save"),
-        label = "",
-        icon = bsicons::bs_icon("save", size = "2em"),
-        class = "btn btn-outline-secondary"
+      bslib::tooltip(
+        actionButton(
+          ns("save"),
+          label = "",
+          icon = bsicons::bs_icon("save", size = "2em"),
+          class = "btn btn-outline-secondary"
+        ),
+        "Save Changes",
       ),
-      "Save Changes",
-      ),
-      bslib::tooltip(actionButton(
-        ns("revert"),
-        label = "",
-        icon = bsicons::bs_icon("arrow-counterclockwise", size = "2em"),
-        class = "btn btn-outline-danger"
-      ),
-      "Revert Changes"
+      bslib::tooltip(
+        actionButton(
+          ns("revert"),
+          label = "",
+          icon = bsicons::bs_icon("arrow-counterclockwise", size = "2em"),
+          class = "btn btn-outline-danger"
+        ),
+        "Revert Changes"
       )
     ),
-
     bslib::layout_columns(
       col_widths = c(10, 2),
-
       bslib::card(
         class = "card-panel",
         bslib::card_header("Data Table"),
@@ -58,7 +58,6 @@ mod_table_ui <- function(id) {
         ),
         fill = FALSE
       ),
-
       bslib::card(
         class = "summary-panel",
         bslib::card_header("Summary"),
@@ -74,25 +73,21 @@ mod_table_ui <- function(id) {
               )
             )
           ),
-
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Columns"),
             div(class = "summary-metric-value", textOutput(ns("summary_cols"), inline = TRUE))
           ),
-
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Average AGE"),
             div(class = "summary-metric-value highlight", textOutput(ns("summary_age"), inline = TRUE))
           ),
-
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Average BMIBL"),
             div(class = "summary-metric-value highlight", textOutput(ns("summary_bmibl"), inline = TRUE))
           ),
-
           div(
             class = "summary-metric",
             div(class = "summary-metric-label", "Modified"),
@@ -145,7 +140,6 @@ mod_table_ui <- function(id) {
 #' @export
 mod_table_server <- function(id, store_reactive, store_trigger) {
   shiny::moduleServer(id, function(input, output, session) {
-
     shinyjs::disable("save")
     shinyjs::disable("revert")
     column_summary_dependencies <- list(
@@ -161,7 +155,7 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
 
     table_data <- shiny::reactive({
       store_trigger()
-      store <- store_reactive()  #
+      store <- store_reactive() #
 
       if (is.null(store$data)) {
         return(data.frame())
@@ -233,79 +227,84 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     shiny::observeEvent(input$`_raf_trigger`, {
       batch <- edit_batch()
 
-      if (is.null(batch) || length(batch) == 0) return()
+      if (is.null(batch) || length(batch) == 0) {
+        return()
+      }
 
-      tryCatch({
-        schema_config <- get_golem_config("schema")
-        updated_cells <- list()
-        affected_columns <- character()
-        for (batch_key in names(batch)) {
-          edit <- batch[[batch_key]]
-          col_editable <- isTRUE(schema_config[[edit$col]]$editable %||% TRUE)
-          if (!col_editable) {
-            awn::notify(
-              sprintf("Column '%s' is not editable. Changes cannot be saved.", edit$col),
-              type = "alert"
-            )
-            next
-          }
+      tryCatch(
+        {
+          schema_config <- get_golem_config("schema")
+          updated_cells <- list()
+          affected_columns <- character()
+          for (batch_key in names(batch)) {
+            edit <- batch[[batch_key]]
+            col_editable <- isTRUE(schema_config[[edit$col]]$editable %||% TRUE)
+            if (!col_editable) {
+              awn::notify(
+                sprintf("Column '%s' is not editable. Changes cannot be saved.", edit$col),
+                type = "alert"
+              )
+              next
+            }
 
-          r_row <- edit$row + 1
-          store_reactive()$update_cell(
-            row = r_row,
-            col = edit$col,
-            value = edit$value
-          )
-          updated_cells[[length(updated_cells) + 1]] <- list(
-            row = r_row,
-            col = edit$col,
-            value = edit$value
-          )
-          affected_columns <- c(affected_columns, edit$col)
-          message("Cell updated: Row ", r_row, ", Col '", edit$col, "', Value: ", edit$value)
-        }
-        delta_update <- list(
-          type = "delta",
-          updatedCells = updated_cells,
-          modifiedCount = store_reactive()$get_modified_count(),
-          affectedColumns = unique(affected_columns)
-        )
-        .GlobalEnv$last_delta_update <- delta_update
-        unique_affected <- unique(affected_columns)
-        affected_summary_outputs <- character()
-        for (col in unique_affected) {
-          if (col %in% names(column_summary_dependencies)) {
-            affected_summary_outputs <- c(
-              affected_summary_outputs,
-              column_summary_dependencies[[col]]
+            r_row <- edit$row + 1
+            store_reactive()$update_cell(
+              row = r_row,
+              col = edit$col,
+              value = edit$value
             )
-          } else {
-            affected_summary_outputs <- c(affected_summary_outputs, "summary_rows")
+            updated_cells[[length(updated_cells) + 1]] <- list(
+              row = r_row,
+              col = edit$col,
+              value = edit$value
+            )
+            affected_columns <- c(affected_columns, edit$col)
+            message("Cell updated: Row ", r_row, ", Col '", edit$col, "', Value: ", edit$value)
           }
+          delta_update <- list(
+            type = "delta",
+            updatedCells = updated_cells,
+            modifiedCount = store_reactive()$get_modified_count(),
+            affectedColumns = unique(affected_columns)
+          )
+          .GlobalEnv$last_delta_update <- delta_update
+          unique_affected <- unique(affected_columns)
+          affected_summary_outputs <- character()
+          for (col in unique_affected) {
+            if (col %in% names(column_summary_dependencies)) {
+              affected_summary_outputs <- c(
+                affected_summary_outputs,
+                column_summary_dependencies[[col]]
+              )
+            } else {
+              affected_summary_outputs <- c(affected_summary_outputs, "summary_rows")
+            }
+          }
+          affected_summary_outputs <- unique(affected_summary_outputs)
+          if ("summary_rows" %in% affected_summary_outputs || "summary_cols" %in% affected_summary_outputs) {
+            row_count_trigger(row_count_trigger() + 1)
+          }
+          if ("summary_age" %in% affected_summary_outputs) {
+            age_trigger(age_trigger() + 1)
+          }
+          if ("summary_bmibl" %in% affected_summary_outputs) {
+            bmibl_trigger(bmibl_trigger() + 1)
+          }
+          modified_trigger(modified_trigger() + 1)
+          store_trigger(store_trigger() + 1)
+          shinyjs::enable("save")
+          shinyjs::enable("revert")
+        },
+        error = function(e) {
+          error_msg <- conditionMessage(e)
+          clean_msg <- clean_error_message(error_msg)
+          awn::notify(
+            paste("Update failed:", clean_msg),
+            type = "alert"
+          )
+          store_trigger(store_trigger() + 1)
         }
-        affected_summary_outputs <- unique(affected_summary_outputs)
-        if ("summary_rows" %in% affected_summary_outputs || "summary_cols" %in% affected_summary_outputs) {
-          row_count_trigger(row_count_trigger() + 1)
-        }
-        if ("summary_age" %in% affected_summary_outputs) {
-          age_trigger(age_trigger() + 1)
-        }
-        if ("summary_bmibl" %in% affected_summary_outputs) {
-          bmibl_trigger(bmibl_trigger() + 1)
-        }
-        modified_trigger(modified_trigger() + 1)
-        store_trigger(store_trigger() + 1)
-        shinyjs::enable("save")
-        shinyjs::enable("revert")
-      }, error = function(e) {
-        error_msg <- conditionMessage(e)
-        clean_msg <- clean_error_message(error_msg)
-        awn::notify(
-          paste("Update failed:", clean_msg),
-          type = "alert"
-        )
-        store_trigger(store_trigger() + 1)
-      })
+      )
       edit_batch(list())
       edit_timer(NULL)
     })
@@ -340,61 +339,66 @@ mod_table_server <- function(id, store_reactive, store_trigger) {
     })
 
     shiny::observeEvent(input$confirm_save, {
-      tryCatch({
-        store_reactive()$save()
+      tryCatch(
+        {
+          store_reactive()$save()
 
-        row_count_trigger(row_count_trigger() + 1)
-        age_trigger(age_trigger() + 1)
-        bmibl_trigger(bmibl_trigger() + 1)
-        modified_trigger(modified_trigger() + 1)
-        store_trigger(store_trigger() + 1)
+          row_count_trigger(row_count_trigger() + 1)
+          age_trigger(age_trigger() + 1)
+          bmibl_trigger(bmibl_trigger() + 1)
+          modified_trigger(modified_trigger() + 1)
+          store_trigger(store_trigger() + 1)
 
-        shinyjs::disable("save")
-        shinyjs::disable("revert")
+          shinyjs::disable("save")
+          shinyjs::disable("revert")
 
-        shiny::removeModal()
+          shiny::removeModal()
 
-        awn::notify(
-          "Changes saved to DuckDB successfully",
-          type = "success"
-        )
-
-      }, error = function(e) {
-        shiny::removeModal()
-        error_msg <- conditionMessage(e)
-        clean_msg <- clean_error_message(error_msg)
-        awn::notify(
-          paste("Save failed:", conditionMessage(e)),
-          type = "alert"
-        )
-      })
+          awn::notify(
+            "Changes saved to DuckDB successfully",
+            type = "success"
+          )
+        },
+        error = function(e) {
+          shiny::removeModal()
+          error_msg <- conditionMessage(e)
+          clean_msg <- clean_error_message(error_msg)
+          awn::notify(
+            paste("Save failed:", conditionMessage(e)),
+            type = "alert"
+          )
+        }
+      )
     })
 
     shiny::observeEvent(input$revert, {
-      tryCatch({
-        store_reactive()$revert()
+      tryCatch(
+        {
+          store_reactive()$revert()
 
-        row_count_trigger(row_count_trigger() + 1)
-        age_trigger(age_trigger() + 1)
-        bmibl_trigger(bmibl_trigger() + 1)
-        modified_trigger(modified_trigger() + 1)
-        store_trigger(store_trigger() + 1)
+          row_count_trigger(row_count_trigger() + 1)
+          age_trigger(age_trigger() + 1)
+          bmibl_trigger(bmibl_trigger() + 1)
+          modified_trigger(modified_trigger() + 1)
+          store_trigger(store_trigger() + 1)
 
-        shinyjs::disable("save")
-        shinyjs::disable("revert")
+          shinyjs::disable("save")
+          shinyjs::disable("revert")
 
-        awn::notify(
-          "Data reverted to original state",
-          type = "success"
-        )
-
-      }, error = function(e) {
-        error_msg <- conditionMessage(e)
-        clean_msg <- clean_error_message(error_msg)
-        awn::notify(
-          paste("Revert failed:", conditionMessage(e)),
-          type = "error")
-      })
+          awn::notify(
+            "Data reverted to original state",
+            type = "success"
+          )
+        },
+        error = function(e) {
+          error_msg <- conditionMessage(e)
+          clean_msg <- clean_error_message(error_msg)
+          awn::notify(
+            paste("Revert failed:", conditionMessage(e)),
+            type = "error"
+          )
+        }
+      )
     })
 
     output$summary_rows <- renderText({

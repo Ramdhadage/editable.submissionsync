@@ -92,27 +92,30 @@ get_schema_config <- function(config = Sys.getenv("GOLEM_CONFIG_ACTIVE", "defaul
 #'
 #' @keywords internal
 validate_golem_config <- function(config = Sys.getenv("GOLEM_CONFIG_ACTIVE", "default")) {
-  tryCatch({
-    # Validate database section
-    db_config <- get_database_config(config)
-    checkmate::assert_list(db_config, names = "named")
-    checkmate::assert_names(
-      names(db_config),
-      must.include = c("name", "path")
-    )
+  tryCatch(
+    {
+      # Validate database section
+      db_config <- get_database_config(config)
+      checkmate::assert_list(db_config, names = "named")
+      checkmate::assert_names(
+        names(db_config),
+        must.include = c("name", "path")
+      )
 
-    # Validate schema section
-    schema_config <- get_schema_config(config)
-    checkmate::assert_list(schema_config, names = "named", min.len = 1)
+      # Validate schema section
+      schema_config <- get_schema_config(config)
+      checkmate::assert_list(schema_config, names = "named", min.len = 1)
 
-    cli::cli_alert_success("Configuration validated: {config}")
-    invisible(TRUE)
-  }, error = function(e) {
-    cli::cli_abort(c(
-      "Invalid golem-config.yml configuration",
-      "i" = "Environment: {config}",
-      "x" = "{conditionMessage(e)}",
-      "!" = "Check inst/golem-config.yml structure"
-    ))
-  })
+      cli::cli_alert_success("Configuration validated: {config}")
+      invisible(TRUE)
+    },
+    error = function(e) {
+      cli::cli_abort(c(
+        "Invalid golem-config.yml configuration",
+        "i" = "Environment: {config}",
+        "x" = "{conditionMessage(e)}",
+        "!" = "Check inst/golem-config.yml structure"
+      ))
+    }
+  )
 }

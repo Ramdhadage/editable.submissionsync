@@ -26,19 +26,19 @@ run_app <- function(
   with_golem_options(
     app = shinyApp(
       ui = shinymanager::secure_app(
-      ui = app_ui,
-      enable_admin = TRUE,
-      # Login page customisation
-      tags_top = tags$div(
-        style = "text-align:center; margin-bottom:20px;",
-        tags$h3("Welcome", style = "color:#2c3e50; font-weight:700;"),
-        tags$p("Please sign in to continue.", style = "color:#7f8c8d;")
-      ),
-      tags_bottom = tags$div(
-        style = "text-align:center; margin-top:20px;
+        ui = app_ui,
+        enable_admin = TRUE,
+        # Login page customisation
+        tags_top = tags$div(
+          style = "text-align:center; margin-bottom:20px;",
+          tags$h3("Welcome", style = "color:#2c3e50; font-weight:700;"),
+          tags$p("Please sign in to continue.", style = "color:#7f8c8d;")
+        ),
+        tags_bottom = tags$div(
+          style = "text-align:center; margin-top:20px;
                    font-size:12px; color:#95a5a6;",
-        tags$p("Contact your administrator if you have trouble signing in.")
-      )
+          tags$p("Contact your administrator if you have trouble signing in.")
+        )
       ),
       server = app_server,
       onStart = onStart,
