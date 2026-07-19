@@ -5,11 +5,11 @@
 #'
 #' @param input,output,session Internal parameters for {shiny}.
 #'     DO NOT REMOVE.
-#' @import shiny
+#' @import shiny shinymanager
 #' @noRd
 app_server <- function(input, output, session) {
-  res_auth <- shinymanager::secure_server(
-    check_credentials = shinymanager::check_credentials(credentials)
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
   )
   current_user  <- reactive({ req(res_auth$user);  res_auth$user  })
   store <- get_cached_store()

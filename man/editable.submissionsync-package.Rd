@@ -19,5 +19,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Ramnath Dhadage \email{ram.dhadage123@gmail.com}
 
+Authors:
+\itemize{
+  \item Ramnath Dhadage \email{ram.dhadage123@gmail.com}
+}
+
 }
 \keyword{internal}

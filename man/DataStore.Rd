@@ -30,7 +30,7 @@ store$summary()
 \examples{
 
 ## ------------------------------------------------
-## Method `DataStore$new`
+## Method `DataStore$new()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -39,7 +39,7 @@ store <- DataStore$new()
 
 
 ## ------------------------------------------------
-## Method `DataStore$revert`
+## Method `DataStore$revert()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -47,7 +47,7 @@ store$revert()
 }
 
 ## ------------------------------------------------
-## Method `DataStore$summary`
+## Method `DataStore$summary()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -55,7 +55,7 @@ store$summary()
 }
 
 ## ------------------------------------------------
-## Method `DataStore$update_cell`
+## Method `DataStore$update_cell()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -64,7 +64,7 @@ store$update_cell(2, 4, 120)  # Using column index
 }
 
 ## ------------------------------------------------
-## Method `DataStore$save`
+## Method `DataStore$save()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -72,7 +72,7 @@ store$save()
 }
 
 ## ------------------------------------------------
-## Method `DataStore$get_modified_count`
+## Method `DataStore$get_modified_count()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -80,34 +80,34 @@ count <- store$get_modified_count()
 }
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{con}}{DuckDB connection object (DBI connection)}
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{con}}{DuckDB connection object (DBI connection)}
 
-\item{\code{data}}{Working data frame currently in use}
+    \item{\code{data}}{Working data frame currently in use}
 
-\item{\code{original}}{Original baseline snapshot of the data
+    \item{\code{original}}{Original baseline snapshot of the data
 Initialize DataStore}
-}
-\if{html}{\out{</div>}}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-DataStore-new}{\code{DataStore$new()}}
-\item \href{#method-DataStore-revert}{\code{DataStore$revert()}}
-\item \href{#method-DataStore-summary}{\code{DataStore$summary()}}
-\item \href{#method-DataStore-update_cell}{\code{DataStore$update_cell()}}
-\item \href{#method-DataStore-save}{\code{DataStore$save()}}
-\item \href{#method-DataStore-get_modified_count}{\code{DataStore$get_modified_count()}}
-\item \href{#method-DataStore-clone}{\code{DataStore$clone()}}
-}
+  \itemize{
+    \item \href{#method-DataStore-initialize}{\code{DataStore$new()}}
+    \item \href{#method-DataStore-revert}{\code{DataStore$revert()}}
+    \item \href{#method-DataStore-summary}{\code{DataStore$summary()}}
+    \item \href{#method-DataStore-update_cell}{\code{DataStore$update_cell()}}
+    \item \href{#method-DataStore-save}{\code{DataStore$save()}}
+    \item \href{#method-DataStore-get_modified_count}{\code{DataStore$get_modified_count()}}
+    \item \href{#method-DataStore-clone}{\code{DataStore$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-DataStore-new"></a>}}
-\if{latex}{\out{\hypertarget{method-DataStore-new}{}}}
-\subsection{Method \code{new()}}{
-This function does following tasks:
+\if{html}{\out{<a id="method-DataStore-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-DataStore-initialize}{}}}
+\subsection{\code{DataStore$new()}}{
+  This function does following tasks:
 \enumerate{
 \item Locate the bundled DuckDB file located in inst/extdata/
 Use: system.file("extdata", "mtcars.duckdb", package = "\if{html}{\out{<your-package>}}")
@@ -121,181 +121,168 @@ using DBI::dbGetQuery()
 \item self$original (the immutable original snapshot)
 }
 }
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$new()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$new()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self for method chaining
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{store <- DataStore$new()
+}
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Returns}{
-Invisible self for method chaining
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-store <- DataStore$new()
-}
-
-}
-\if{html}{\out{</div>}}
-
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DataStore-revert"></a>}}
 \if{latex}{\out{\hypertarget{method-DataStore-revert}{}}}
-\subsection{Method \code{revert()}}{
-Reset the working data (self$data) back to the original snapshot.
+\subsection{\code{DataStore$revert()}}{
+  Reset the working data (self$data) back to the original snapshot.
 
 Expected behavior:
 \itemize{
 \item self$data should become identical to self$original
 \item Does not affect the database or the connection
 }
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$revert()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$revert()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self for method chaining
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{store$revert()
+}
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Returns}{
-Invisible self for method chaining
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-store$revert()
-}
-}
-\if{html}{\out{</div>}}
-
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DataStore-summary"></a>}}
 \if{latex}{\out{\hypertarget{method-DataStore-summary}{}}}
-\subsection{Method \code{summary()}}{
-Returns human-readable summary for UI display with validation and error handling.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$summary()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-List with summary components (message, rows, cols, numeric_means).
+\subsection{\code{DataStore$summary()}}{
+  Returns human-readable summary for UI display with validation and error handling.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$summary()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    List with summary components (message, rows, cols, numeric_means).
 All fields always present; numeric_means is NULL if no numeric columns.
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{store$summary()
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-store$summary()
-}
-}
-\if{html}{\out{</div>}}
-
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DataStore-update_cell"></a>}}
 \if{latex}{\out{\hypertarget{method-DataStore-update_cell}{}}}
-\subsection{Method \code{update_cell()}}{
-Type-safe cell update with validation. Ensures data type consistency
+\subsection{\code{DataStore$update_cell()}}{
+  Type-safe cell update with validation. Ensures data type consistency
 with original dataset. Implements deterministic single-cell edit pattern
 for predictable state management. Uses granular validation per phase.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$update_cell(row, col, value)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{row}}{Integer row index (1-based)}
-
-\item{\code{col}}{Column name (character) or index (integer)}
-
-\item{\code{value}}{New value to assign (will be coerced to match column type)}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisible TRUE on success, throws cli_abort on validation failure
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-store$update_cell(1, "mpg", 22.5)
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$update_cell(row, col, value)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{row}}{Integer row index (1-based)}
+      \item{\code{col}}{Column name (character) or index (integer)}
+      \item{\code{value}}{New value to assign (will be coerced to match column type)}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible TRUE on success, throws cli_abort on validation failure
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{store$update_cell(1, "mpg", 22.5)
 store$update_cell(2, 4, 120)  # Using column index
 }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
 
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DataStore-save"></a>}}
 \if{latex}{\out{\hypertarget{method-DataStore-save}{}}}
-\subsection{Method \code{save()}}{
-Persists current working data back to DuckDB table with full validation.
+\subsection{\code{DataStore$save()}}{
+  Persists current working data back to DuckDB table with full validation.
 Implements granular validation phases with deterministic checks (checkmate)
 and risky operations in try-catch blocks. Overwrites entire table with current state.
 Resets modified cells counter and updates original snapshot after successful save.
 Uses bifurcated error handling: checkmate assertions -> try-catch for DB operations
 -> cli messaging for context.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$save()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$save()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self for method chaining
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{store$save()
+}
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Returns}{
-Invisible self for method chaining
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-store$save()
-}
-}
-\if{html}{\out{</div>}}
-
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DataStore-get_modified_count"></a>}}
 \if{latex}{\out{\hypertarget{method-DataStore-get_modified_count}{}}}
-\subsection{Method \code{get_modified_count()}}{
-Returns the number of cells that have been modified since last save/revert.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$get_modified_count()}\if{html}{\out{</div>}}
+\subsection{\code{DataStore$get_modified_count()}}{
+  Returns the number of cells that have been modified since last save/revert.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$get_modified_count()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer count of modified cells
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{count <- store$get_modified_count()
+}
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Returns}{
-Integer count of modified cells
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-count <- store$get_modified_count()
-}
-}
-\if{html}{\out{</div>}}
-
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DataStore-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-DataStore-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DataStore$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{DataStore$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{DataStore$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }
