@@ -28,9 +28,6 @@ It introduces a **structured, audit-ready workflow** to replace fragmented proce
 - **🏗️ Production-Ready** - Built with Golem framework for scalability
 
 ---
-
----
-
 ## 🚀 Live Demo
 
 **Try it now:** [https://ti5syn-ramdhadage.shinyapps.io/editable/](https://ti5syn-ramdhadage.shinyapps.io/editable/)
