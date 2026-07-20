@@ -199,7 +199,11 @@ mod_table_server <- function(id, store_reactive, store_trigger, current_user = N
         rm("last_delta_update", envir = .GlobalEnv)
         return(result)
       }
-      hotwidget(data = data)
+      if(tolower(current_user()) %in% c("viewer", "reviewer")) {
+        hotwidget(data = data, editable_cols = setNames(rep(FALSE, ncol(data)), names(data)))
+      } else {
+        hotwidget(data = data)
+      }
     })
     edit_batch <- reactiveVal(list())
     edit_timer <- reactiveVal(NULL)
