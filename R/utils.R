@@ -851,8 +851,6 @@ get_cached_store <- function() {
   if (!exists(".store", envir = .cache_env, inherits = FALSE)) {
     .cache_env$.store <- DataStore$new()
     .cache_env$.init_time <- Sys.time()
-  } else {
-    .cache_env$.store$revert()
   }
   .cache_env$.store
 }

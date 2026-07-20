@@ -310,16 +310,8 @@ mod_table_server <- function(id, store_reactive, store_trigger, current_user = N
           }
           modified_trigger(modified_trigger() + 1)
           store_trigger(store_trigger() + 1)
-          if (role %in% c("reviewer", "admin")) {
-            shinyjs::enable("save")
-          } else {
-            shinyjs::disable("save")
-          }
-          if (role != "viewer") {
-            shinyjs::enable("revert")
-          } else {
-            shinyjs::disable("revert")
-          }
+          shinyjs::toggleState("save", condition = role %in% c("reviewer", "admin"))
+          shinyjs::toggleState("revert", condition = role != "viewer")
         },
         error = function(e) {
           error_msg <- conditionMessage(e)
@@ -466,6 +458,10 @@ mod_table_server <- function(id, store_reactive, store_trigger, current_user = N
     output$summary_modified <- renderText({
       modified_trigger()
       store <- store_reactive()
+      modified <- store$get_modified_count() > 0
+      user <- tolower(current_user())
+      shinyjs::toggleState("save", condition = modified && user %in% c("reviewer", "admin"))
+      shinyjs::toggleState("revert", condition = modified && user %in% c("reviewer", "editor", "admin"))
       as.character(store$get_modified_count())
     })
   })
