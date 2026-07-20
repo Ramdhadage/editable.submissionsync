@@ -239,7 +239,7 @@ mod_table_server <- function(id, store_reactive, store_trigger, current_user = N
 
     shiny::observeEvent(input$`_raf_trigger`, {
       batch <- edit_batch()
-
+      role <- tolower(resolve_user())
       if (is.null(batch) || length(batch) == 0) {
         return()
       }
@@ -306,8 +306,16 @@ mod_table_server <- function(id, store_reactive, store_trigger, current_user = N
           }
           modified_trigger(modified_trigger() + 1)
           store_trigger(store_trigger() + 1)
-          shinyjs::enable("save")
-          shinyjs::enable("revert")
+          if (role %in% c("reviewer", "admin")) {
+            shinyjs::enable("save")
+          } else {
+            shinyjs::disable("save")
+          }
+          if (role != "viewer") {
+            shinyjs::enable("revert")
+          } else {
+            shinyjs::disable("revert")
+          }
         },
         error = function(e) {
           error_msg <- conditionMessage(e)
@@ -458,3 +466,5 @@ mod_table_server <- function(id, store_reactive, store_trigger, current_user = N
     })
   })
 }
+
+
